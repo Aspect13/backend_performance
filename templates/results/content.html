@@ -1,8 +1,8 @@
-<meta property="build_id" content="{{ test_data['build_id'] }}"/>
-<meta property="test_id" content="{{ test_data['id'] }}"/>
-<meta property="lg_type" content="{{ test_data['lg_type'] }}"/>
-<meta property="test_name" content="{{ test_data['name'] }}"/>
-<meta property="environment" content="{{ test_data['environment'] }}"/>
+{#<meta property="build_id" content="{{ test_data['build_id'] }}"/>#}
+{#<meta property="test_id" content="{{ test_data['id'] }}"/>#}
+{#<meta property="lg_type" content="{{ test_data['lg_type'] }}"/>#}
+{#<meta property="test_name" content="{{ test_data['name'] }}"/>#}
+{#<meta property="environment" content="{{ test_data['environment'] }}"/>#}
 
 <!--<div class="container" id="test_results">-->
 <div class="card card-12 pb-4">
@@ -343,7 +343,7 @@
 </div>
 {% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed', 'success'] %}
 {% with result_id=test_data.id %}
-{% include 'backend_performance:results/artifacts_table.html' %}
+    {% include 'backend_performance:results/artifacts_table.html' %}
 {% endwith %}
 
 {% else %}

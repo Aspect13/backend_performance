@@ -42,16 +42,13 @@ class Slot:  # pylint: disable=E1101,R0903
         from pylon.core.tools import log
         log.info('slot: [%s], payload: %s', slot, payload)
         result_id = payload.request.args.get('result_id')
-        source_data = {}
         if result_id:
             test_data = APIReport.query.get_or_404(result_id).to_json()
-            source_data = test_data['test_config'].get('source')
             analytics_control = render_analytics_control(test_data["requests"])
 
         with context.app.app_context():
             return self.descriptor.render_template(
                 'results/scripts.html',
-                source_data=source_data,
                 test_data=test_data,
                 analytics_control=analytics_control,
             )

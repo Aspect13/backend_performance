@@ -1,3 +1,5 @@
+{% set source_data = test_data['test_config'].get('source', {}) %}
+
 <script src="{{ url_for('design-system.static', filename='assets/js/dropdowns.js') }}"></script>
 <script src="{{ url_for('design-system.static', filename='assets/vendor/nouislider/nouislider.js') }}"></script>
 <script src="{{ url_for('design-system.static', filename='assets/vendor/nouislider/wNumb.min.js') }}"></script>
@@ -10,9 +12,10 @@
 <script src="{{ url_for('backend_performance.static', filename='js/in_progress.js') }}"></script>
 <script src="{{ url_for('backend_performance.static', filename='js/artifacts.js') }}"></script>
 <script>
+    var analyticsLine;
     let low_value = 0;
     let high_value = 100;
-    $(document).ready(function() {
+    $(document).on('vue_init', function() {
 
         async function getTestStatus() {
             const projectId = {{ test_data.project_id }}
@@ -38,7 +41,8 @@
         loadRequestData('/api/v1/backend_performance/charts/requests/summary', "Response time, ms");
         fillErrorTable();
         fillSummaryTable();
-        const perfomanceTimePicker = noUiSlider.create($("#vuh-perfomance-time-picker")[0], {
+        if ($("#vuh-perfomance-time-picker").length > 0){
+            const perfomanceTimePicker = noUiSlider.create($("#vuh-perfomance-time-picker")[0], {
             range: {
                 'min': 0,
                 'max': 100
@@ -54,6 +58,8 @@
             high_value = values[1]
             resizeChart();
         });
+        }
+
     });
 </script>
 
@@ -72,4 +78,25 @@
         nav_links.addClass('disabled')
         IntegrationSection.Manager().set({{ integrations_data | default({}) | tojson }})
     })
+</script>
+
+<script>
+    function fillErrorTable() {
+        var start_time = $("#start_time").html()
+        var end_time = $("#end_time").html()
+        test_name = '{{ test_data['name'] }}';
+        $('#errors').bootstrapTable('refreshOptions', {
+            url: `/api/v1/backend_performance/charts/errors/table?test_name=${test_name}&start_time=${start_time}&end_time=${end_time}&low_value=${low_value}&high_value=${high_value}`
+        })
+    }
+    function setParams() {
+        build_id = '{{ test_data['build_id'] }}';
+        testId = '{{ test_data['id'] }}';
+        lg_type = '{{ test_data['lg_type'] }}';
+        test_name = '{{ test_data['name'] }}';
+        environment = '{{ test_data['environment'] }}';
+        samplerType = $("#sampler").val()?.toUpperCase();
+        statusType = $("#status").val()?.toLowerCase();
+        aggregator = $("#aggregator").val()?.toLowerCase();
+    }
 </script>
