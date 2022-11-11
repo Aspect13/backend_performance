@@ -23,22 +23,22 @@ class API(Resource):
         return {"baseline": test, "report_id": report_id}
 
     def post(self, project_id: int):
-        args = request.json
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
-        report_id = APIReport.query.filter_by(project_id=project_id, name=args['test_name'],
-                                              build_id=args['build_id']).first().to_json()['id']
-        baseline = APIBaseline.query.filter_by(project_id=project.id, test=args.get("test_name"),
-                                               environment=args.get("env")).first()
-        if baseline:
-            baseline.delete()
-        test = get_aggregated_test_results(args['test_name'], args['build_id'])
+        report: APIReport = APIReport.query.get_or_404(request.json['report_id'])
+        if report.project_id != project.id:
+            return 'Not found', 404
+        test = get_aggregated_test_results(report.name, report.build_id)
         summary = []
         for req in test[0]:
             summary.append(req)
-        baseline = APIBaseline(test=args["test_name"],
-                               environment=args["env"],
+        APIBaseline.query.filter_by(
+            project_id=project.id, test=report.name,
+            environment=report.environment
+        ).delete()
+        baseline = APIBaseline(test=report.name,
+                               environment=report.environment,
                                project_id=project.id,
-                               report_id=report_id,
+                               report_id=report.id,
                                summary=summary)
         baseline.insert()
-        return {"message": "baseline is set"}
+        return baseline.to_json(), 200
