@@ -725,6 +725,7 @@ const TestCreateModal = {
             // special fields
             this.test_parameters.set(test_parameters_filtered)
             this.source.set(source)
+
             integrations && this.integrations.set(integrations)
             scheduling && this.scheduling.set(scheduling)
 
@@ -823,8 +824,6 @@ const TestRunModal = {
                             ref="locations"
                         ></Locations>
                         <slot name="integrations"></slot>
-                        <div class="section">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -845,7 +844,6 @@ const TestRunModal = {
     },
     mounted() {
         $(this.$el).on('hide.bs.modal', this.clear)
-        // $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
     },
     data() {
         return this.initial_state()
