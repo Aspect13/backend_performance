@@ -11,7 +11,7 @@ class Slot:  # pylint: disable=E1101,R0903
         public_regions = context.rpc_manager.call.get_rabbit_queues("carrier")
         public_regions.remove("__internal")
         project_regions = context.rpc_manager.call.get_rabbit_queues(f"project_{project_id}_vhost")
-        cloud_regions = context.rpc_manager.call.integrations_get_cloud_integrations(
+        cloud_regions = context.rpc_manager.timeout(5).integrations_get_cloud_integrations(
                 project_id)
         with context.app.app_context():
             return self.descriptor.render_template(

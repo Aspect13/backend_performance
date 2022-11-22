@@ -14,27 +14,32 @@ class API(Resource):
         self.module = module
 
     def get(self, project_id: int):
-        args = request.args
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
-        baseline = APIBaseline.query.filter_by(project_id=project.id, test=args.get("test_name"),
-                                               environment=args.get("env")).first()
-        test = baseline.summary if baseline else []
-        report_id = baseline.report_id if baseline else 0
-        return {"baseline": test, "report_id": report_id}
+        baseline = APIBaseline.query.filter(
+            APIBaseline.project_id == project.id,
+            APIBaseline.test == request.args.get("test_name"),
+            APIBaseline.environment == request.args.get("env")
+        ).first()
+        try:
+            return {"baseline": baseline.summary, "report_id": baseline.report_id}, 200
+        except AttributeError:
+            return 'Baseline not found', 404
 
     def post(self, project_id: int):
+        try:
+            report_id = int(request.json['report_id'])
+        except (KeyError, ValueError):
+            return 'report_id must be provided', 400
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
-        report: APIReport = APIReport.query.get_or_404(request.json['report_id'])
-        if report.project_id != project.id:
+        report: APIReport = APIReport.query.filter(
+            APIReport.project_id == project.id,
+            APIReport.id == report_id
+        ).first()
+        if not report:
             return 'Not found', 404
         test = get_aggregated_test_results(report.name, report.build_id)
-        summary = []
-        for req in test[0]:
-            summary.append(req)
-        APIBaseline.query.filter_by(
-            project_id=project.id, test=report.name,
-            environment=report.environment
-        ).delete()
+        summary = [i for i in test[0]]
+
         baseline = APIBaseline(test=report.name,
                                environment=report.environment,
                                project_id=project.id,

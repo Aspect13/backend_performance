@@ -27,11 +27,12 @@ const reRunTest = () => {
 
 
 const setBaseline = async () => {
-    await fetch(`/api/v1/backend_performance/baseline/${getSelectedProjectId()}`, {
+    const resp = await fetch(`/api/v1/backend_performance/baseline/${getSelectedProjectId()}`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({report_id: result_test_id})
     })
+    resp.ok ? showNotify('SUCCESS', 'Baseline set') : showNotify('ERROR', 'Error settings baseline')
 }
 
 const stopTest = async () => {
