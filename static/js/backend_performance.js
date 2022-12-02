@@ -566,7 +566,7 @@ const TestCreateModal = {
                 return acc === '' ? item.msg : [acc, item.msg].join('; ')
             }, '')
         },
-        compareObjectsDiff(o1, o2, required_fields) {
+        compareObjectsDiff(o1, o2={}, required_fields) {
             return Object.keys(o2).reduce((diff, key) => {
                 if (o1[key] !== o2[key] || required_fields.includes(key)) {
                     return {
