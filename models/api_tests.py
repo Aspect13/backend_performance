@@ -187,6 +187,9 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
         for section in mark_for_delete.keys():
             if not self.integrations[section]:
                 self.integrations.pop(section)
+        location = self.location
+        self.location = "__internal" if self.location.startswith(
+            "kubernetes") else self.location
 
         execution_json = {
             'test_id': self.test_uid,
@@ -200,7 +203,7 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
             **self.rpc.call.parse_source(self.source).execution_json,
             'integrations': self.integrations
         }
-
+        self.location = location
         if execution:
             execution_json = secrets_tools.unsecret(execution_json, project_id=self.project_id)
 
