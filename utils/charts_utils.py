@@ -9,6 +9,8 @@ from ..connectors.influx import (
     get_errors_for_analytics, get_backend_requests_for_analytics,
     get_engine_health_cpu, get_project_id, get_engine_health_memory, get_engine_health_load
 )
+
+from ..connectors.minio import get_requests_summary_data
 from ..connectors.loki import get_results
 from .report_utils import calculate_proper_timeframe, chart_data, create_dataset, comparison_data, _create_dataset
 from pylon.core.tools import log
@@ -60,6 +62,18 @@ def get_tests_metadata(tests):
 
 def requests_summary(args: dict):
     args['convert_time'] = False
+    # log.info("args***********")
+    # log.info(args)
+    # log.info("********************")
+    # log.info("influx response")
+    # _res = _query_only(args, get_backend_requests)
+    # log.info(_res)
+    # is_finished = True
+    # if is_finished:
+    #     _res = get_requests_summary_data(args)
+    #     log.info("minio response")
+    #     log.info(_res)
+    # return _res
     return _query_only(args, get_backend_requests)
 
 
