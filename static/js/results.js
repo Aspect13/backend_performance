@@ -1,6 +1,3 @@
-// let low_value = 0
-// let high_value = 100
-
 window.presetLine = undefined  // this is requests/transactions chart
 const result_test_id = new URLSearchParams(location.search).get('result_id')
 
@@ -24,7 +21,6 @@ const reRunTest = () => {
         }
     })
 }
-
 
 const setBaseline = async () => {
     const resp = await fetch(`/api/v1/backend_performance/baseline/${getSelectedProjectId()}`, {

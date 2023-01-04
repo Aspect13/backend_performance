@@ -31,7 +31,7 @@ class TestCommon(TestOverrideable):
     Model of test itself without test_params or other plugin module's data
     """
     project_id: int
-    test_uid: Optional[str]
+    uid: Optional[str]
     name: str
     test_type: str
     env_type: str
@@ -42,8 +42,8 @@ class TestCommon(TestOverrideable):
 
     @root_validator
     def set_uuid(cls, values):
-        if not values.get('test_uid'):
-            values['test_uid'] = str(uuid4())
+        if not values.get('uid'):
+            values['uid'] = str(uuid4())
         return values
 
     @root_validator(pre=True, allow_reuse=True)

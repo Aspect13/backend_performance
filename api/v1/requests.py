@@ -23,7 +23,7 @@ class API(Resource):
             APIReport.project_id == project.id
         ).all()
         for i in query_result:
-            requests_data.update(set(i[0].split(';')))
+            requests_data.update(set(i))
         try:
             requests_data.remove('All')
         except KeyError:

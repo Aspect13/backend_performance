@@ -69,7 +69,7 @@ def get_backend_test_data(event):
                         break
     else:
         return {}
-    start_time = datetime.utcnow().isoformat("T") + "Z"
+    start_time = datetime.utcnow().isoformat()
 
     data = {'build_id': f'build_{uuid4()}', 'test_name': test_name, 'lg_type': lg_type,
             'type': test_type,
@@ -94,12 +94,12 @@ def run_test(test: 'PerformanceApiTest', config_only: bool = False, execution: b
 
     test_data = get_backend_test_data(event)
     from ..models.api_reports import APIReport
+    # todo: create report from pd model
     report = APIReport(
         name=test_data["test_name"],
         project_id=test.project_id,
         environment=test_data["environment"],
         type=test_data["type"],
-        end_time="",
         start_time=test_data["start_time"],
         failures=0,
         total=0,
@@ -113,7 +113,7 @@ def run_test(test: 'PerformanceApiTest', config_only: bool = False, execution: b
         lg_type=test_data["lg_type"],
         onexx=0, twoxx=0, threexx=0, fourxx=0, fivexx=0,
         requests="",
-        test_uid=test.test_uid,
+        uid=test.uid,
         test_config=test.api_json()
     )
     report.insert()

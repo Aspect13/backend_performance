@@ -674,7 +674,7 @@ const TestCreateModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 name: '',
                 test_type: '',
@@ -852,7 +852,7 @@ const TestRunModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 location: 'default',
                 parallel_runners: 1,

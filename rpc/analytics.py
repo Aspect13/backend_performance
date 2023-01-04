@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 from sqlalchemy import JSON, cast, Integer, String, literal_column, desc, asc, func
 from collections import OrderedDict
@@ -36,9 +37,7 @@ class RPC:
     @web.rpc('performance_analysis_test_runs_backend_performance')
     @rpc_tools.wrap_exceptions(RuntimeError)
     def backend_performance_tr(self, project_id: int,
-                               start_time, end_time=None) -> tuple:
-        log.info('backend_performance rpc | %s | %s', project_id, [start_time, end_time, ])
-
+                               start_time: datetime, end_time: Optional[datetime] = None) -> tuple:
         query = APIReport.query.with_entities(
             *columns.values()
         ).filter(

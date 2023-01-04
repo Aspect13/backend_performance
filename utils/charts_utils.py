@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Callable, Optional, Generator
 
+from pydantic import BaseModel, validator
 from ..models.api_reports import APIReport
 from ..connectors.influx import (
     get_backend_requests, get_hits_tps, average_responses, get_build_data,
@@ -18,17 +19,42 @@ from pylon.core.tools import log
 from tools import constants as c, influx_tools, data_tools
 
 
+class TimeframeArgs(BaseModel):
+    start_time: datetime
+    end_time: Optional[datetime]
+    low_value: Optional[int] = 0
+    high_value: Optional[int] = 100
+    test_name: str
+    build_id: Optional[str]
+    lg_type: Optional[str]
+    aggregation: Optional[str] = 'auto'
+
+    @validator('end_time', always=True)
+    def set_end_time(cls, value, values: dict):
+        if not value:
+            values['high_value'] = 100
+            return datetime.utcnow()
+        return value
+
+    class Config:
+        fields = {
+            'aggregator': 'aggregation'
+        }
+
+
 def _timeframe(args: dict, time_as_ts: bool = False) -> tuple:
     log.info(f"args {args}")
-    end_time = args.get('end_time')
-    high_value = args.get('high_value', 100)
-    if not end_time:
-        end_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-        high_value = 100
-    return calculate_proper_timeframe(args.get('build_id', None), args['test_name'], args.get('lg_type', None),
-                                      args.get('low_value', 0),
-                                      high_value, args['start_time'], end_time, args.get('aggregator', 'auto'),
-                                      time_as_ts=time_as_ts)
+    _parsed_args = TimeframeArgs.parse_obj(args)
+    # end_time = args.get('end_time')
+    # high_value = args.get('high_value', 100)
+    # if not end_time or end_time == 'null':
+    #     end_time = datetime.utcnow()
+    #     high_value = 100
+    # return calculate_proper_timeframe(args.get('build_id', None), args['test_name'], args.get('lg_type', None),
+    #                                   args.get('low_value', 0),
+    #                                   high_value, args['start_time'], end_time, args.get('aggregator', 'auto'),
+    #                                   time_as_ts=time_as_ts)
+    return calculate_proper_timeframe(**_parsed_args.dict(), time_as_ts=time_as_ts)
 
 
 def _query_only(args: dict, query_func: Callable) -> dict:

@@ -13,9 +13,9 @@ from ..utils.utils import run_test
 
 
 class RPC:
-    @web.rpc('backend_results_or_404', 'results_or_404')
+    @web.rpc('backend_performance_results_or_404', 'results_or_404')
     @rpc_tools.wrap_exceptions(RuntimeError)
-    def backend_results_or_404(self, run_id):
+    def backend_performance_results_or_404(self, run_id):
         return APIReport.query.get_or_404(run_id)
 
     @web.rpc('backend_performance_test_create_common_parameters', 'parse_common_test_parameters')
@@ -58,9 +58,9 @@ class RPC:
 
     @web.rpc('backend_performance_job_type_by_uid')
     @rpc_tools.wrap_exceptions(RuntimeError)
-    def job_type_by_uid(self, project_id: int, test_uid: str) -> Optional[str]:
+    def job_type_by_uid(self, project_id: int, uid: str) -> Optional[str]:
         test = PerformanceApiTest.query.filter(
-                PerformanceApiTest.get_api_filter(project_id, test_uid)
+                PerformanceApiTest.get_api_filter(project_id, uid)
         ).first()
         if test:
             return test.job_type
