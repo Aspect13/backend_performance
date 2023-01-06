@@ -28,7 +28,7 @@
 
                     {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed', 'success'] %}
                         <div class="selectpicker-titled">
-                            <span class="font-h6 font-semibold px-3 item__left">AUTOAPDATE</span>
+                            <span class="font-h6 font-semibold px-3 item__left">AUTOUPDATE</span>
                             <select class="selectpicker" data-style="item__right"
                                     :value="master.update_interval"
                                     @change="master.handle_change_update_interval"

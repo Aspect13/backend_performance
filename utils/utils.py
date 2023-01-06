@@ -182,8 +182,11 @@ def parse_test_data(project_id: int, request_data: dict,
         cloud_settings["memory_limit"] = common_params['env_vars']["memory_quota"]
         cloud_settings["concurrency"] = common_params['parallel_runners']
 
-        request_data["integrations"]["clouds"] = {}
-        request_data["integrations"]["clouds"][integration_name] = cloud_settings
+        integrations = request_data.get('integrations', {})
+        integrations['clouds'] = {
+            integration_name: cloud_settings
+        }
+        request_data['integrations'] = integrations
 
     try:
         test_data = rpc.call.backend_performance_test_create_common_parameters(

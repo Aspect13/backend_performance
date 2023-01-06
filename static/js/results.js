@@ -39,13 +39,13 @@ const stopTest = async () => {
     const resp = await fetch(`/api/v1/backend_performance/report_status/${getSelectedProjectId()}/${result_test_id}`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: {
+        body: JSON.stringify({
             "test_status": {
                 "status": "Canceled",
                 "percentage": 100,
                 "description": "Test was canceled"
             }
-        }
+        })
     })
     resp.ok ? location.reload() : console.warn('stop test failed', resp)
 }
