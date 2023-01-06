@@ -736,7 +736,7 @@ const TestCreateModal = {
             Object.assign(this.$data, this.initial_state())
             this.test_parameters.clear()
             this.source.clear()
-            this.integrations.clear()
+            this.integrations?.clear()
             this.scheduling.clear()
             $('#backend_parallel').text(this.parallel_runners)
             $('#backend_cpu').text(this.cpu_quota)
@@ -895,7 +895,7 @@ const TestRunModal = {
         clear() {
             Object.assign(this.$data, this.initial_state())
             this.test_parameters.clear()
-            this.integrations.clear()
+            this.integrations?.clear()
         },
         clearErrors() {
             this.errors = {}
