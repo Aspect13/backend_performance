@@ -35,7 +35,7 @@ columns = OrderedDict((
 class RPC:
     @web.rpc('performance_analysis_test_runs_backend_performance')
     @rpc_tools.wrap_exceptions(RuntimeError)
-    def backend_performance_tr(self, project_id: int,
+    def test_runs(self, project_id: int,
                                start_time, end_time=None) -> tuple:
         log.info('backend_performance rpc | %s | %s', project_id, [start_time, end_time, ])
 
