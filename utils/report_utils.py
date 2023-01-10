@@ -1,4 +1,8 @@
+from collections import defaultdict
 from datetime import datetime
+from typing import Union
+
+from ..connectors.influx import calculate_auto_aggregation
 from ..connectors.minio import calculate_auto_aggregation as calculate_auto_aggregation_minio
 from ..connectors.influx import calculate_auto_aggregation as calculate_auto_aggregation_influx
 
@@ -14,16 +18,16 @@ def create_dataset(timeline, data, scope, metric, axe):
     colors = data_tools.charts.color_gen(len(scope))
     for each, color in zip(scope, colors):
         datasets.append({
-                "label": f"{each}_{metric}",
-                "fill": False,
-                "data": list(data.values()),
-                "yAxisID": axe,
-                "borderWidth": 2,
-                "lineTension": 0,
-                "spanGaps": True,
-                "backgroundColor": "rgb({}, {}, {})".format(*color),
-                "borderColor": "rgb({}, {}, {})".format(*color)
-            })
+            "label": f"{each}_{metric}",
+            "fill": False,
+            "data": list(data.values()),
+            "yAxisID": axe,
+            "borderWidth": 2,
+            "lineTension": 0,
+            "spanGaps": True,
+            "backgroundColor": "rgb({}, {}, {})".format(*color),
+            "borderColor": "rgb({}, {}, {})".format(*color)
+        })
     return {
         "labels": labels,
         "datasets": datasets
@@ -39,16 +43,16 @@ def _create_dataset(timeline, data, scope, metric, axe):
     for each, color in zip(data, colors):
         key = list(each.keys())[0]
         datasets.append({
-                "label": f"{key}_{metric}",
-                "fill": False,
-                "data": list(each[key].values()),
-                "yAxisID": axe,
-                "borderWidth": 2,
-                "lineTension": 0,
-                "spanGaps": True,
-                "backgroundColor": "rgb({}, {}, {})".format(*color),
-                "borderColor": "rgb({}, {}, {})".format(*color)
-            })
+            "label": f"{key}_{metric}",
+            "fill": False,
+            "data": list(each[key].values()),
+            "yAxisID": axe,
+            "borderWidth": 2,
+            "lineTension": 0,
+            "spanGaps": True,
+            "backgroundColor": "rgb({}, {}, {})".format(*color),
+            "borderColor": "rgb({}, {}, {})".format(*color)
+        })
     return {
         "labels": labels,
         "datasets": datasets
@@ -123,7 +127,7 @@ def chart_data(timeline, users, other, yAxis="response_time", convert_time: bool
     return _data
 
 
-def render_analytics_control(requests):
+def render_analytics_control(requests: list) -> dict:
     item = {
         "Users": "getData('Users', '{}')",
         # "Hits": "getData('Hits', '{}')",
@@ -141,32 +145,37 @@ def render_analytics_control(requests):
         "4xx": "getData('4xx', '{}')",
         "5xx": "getData('5xx', '{}')"
     }
-    control = {}
-    for each in ["All"] + requests:
-        control[each] = {}
+    control = defaultdict(dict)
+    for each in ["All", *requests]:
         for every in item:
             control[each][every] = item[every].format(each)
     return control
 
 
 def calculate_proper_timeframe(build_id: str, test_name: str, lg_type: str, low_value: int, high_value: int,
-                               start_time, end_time, aggregation: str, time_as_ts: bool = False, 
-                               source: str = None) -> tuple:
-    start_time = c.str_to_timestamp(start_time)
-    end_time = c.str_to_timestamp(end_time)
-    interval = end_time - start_time
+                               start_time: datetime, end_time: Union[str, datetime], aggregation: str,
+                               time_as_ts: bool = False, source: str = None) -> tuple:
+    start_time_ts = start_time.timestamp()
+    end_time_ts = end_time.timestamp()
+
+    interval = end_time_ts - start_time_ts
     start_shift = interval * (float(low_value) / 100.0)
     end_shift = interval * (float(high_value) / 100.0)
-    end_time = start_time + end_shift
-    start_time += start_shift
+
+    end_time_ts = start_time_ts + end_shift
+    start_time_ts += start_shift
     if time_as_ts:
-        return int(start_time), int(end_time), aggregation
-    t_format = "%Y-%m-%dT%H:%M:%S.000Z"
-    start_time = datetime.fromtimestamp(start_time).strftime(t_format)
-    end_time = datetime.fromtimestamp(end_time).strftime(t_format)
+        return int(start_time_ts), int(end_time_ts), aggregation
+    # t_format = "%Y-%m-%dT%H:%M:%S.000Z"
+    # start_time = datetime.fromtimestamp(start_time_ts).strftime(t_format)
+    # end_time = datetime.fromtimestamp(end_time).strftime(t_format)
     if aggregation == 'auto' and build_id:
         if source == 'minio':
-            aggregation = calculate_auto_aggregation_minio(build_id, test_name, lg_type, start_time, end_time)
+            aggregation = calculate_auto_aggregation_minio(build_id, test_name, lg_type,
+                                                           start_time=datetime.fromtimestamp(start_time_ts),
+                                                           end_time=datetime.fromtimestamp(end_time_ts))
         else:
-            aggregation = calculate_auto_aggregation_influx(build_id, test_name, lg_type, start_time, end_time)
+            aggregation = calculate_auto_aggregation_influx(build_id, test_name, lg_type,
+                                                            start_time=datetime.fromtimestamp(start_time_ts),
+                                                            end_time=datetime.fromtimestamp(end_time_ts))
     return start_time, end_time, aggregation

@@ -674,7 +674,7 @@ const TestCreateModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 name: '',
                 test_type: '',
@@ -823,8 +823,6 @@ const TestRunModal = {
                             ref="locations"
                         ></Locations>
                         <slot name="integrations"></slot>
-                        <div class="section">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -845,7 +843,6 @@ const TestRunModal = {
     },
     mounted() {
         $(this.$el).on('hide.bs.modal', this.clear)
-        // $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
     },
     data() {
         return this.initial_state()
@@ -854,7 +851,7 @@ const TestRunModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 location: 'default',
                 parallel_runners: 1,

@@ -29,8 +29,8 @@ class API(Resource):
         if output == 'docker':
             return {'cmd': test.docker_command}, 200
 
-        if output == 'test_uid':
-            return {"config": [{"test_id": test.test_uid}]}, 200  # format is ok?
+        if output == 'test_uid' or output == 'uid':
+            return {"config": [{"test_id": test.uid}]}, 200  # format is ok?
 
         test = test.api_json()
         schedules = test.pop('schedules', [])
@@ -50,7 +50,7 @@ class API(Resource):
             project_id=project_id,
             request_data=request.json,
             rpc=self.module.context.rpc_manager,
-            common_kwargs={'exclude': {'test_uid', }}
+            common_kwargs={'exclude': {'uid', }}
         )
 
         if errors:

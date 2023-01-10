@@ -8,26 +8,15 @@ from ..utils.report_utils import render_analytics_control
 class Slot:  # pylint: disable=E1101,R0903
     @web.slot('results_content')
     def content(self, context, slot, payload):
-        # log.info('slot: [%s] || payload: [%s]', slot, payload)
-        # log.info('payload request args: [%s]', payload.request.args)
         result_id = payload.request.args.get('result_id')
         if result_id:
             test_data = APIReport.query.get_or_404(result_id).to_json()
-            try:
-                test_data["failure_rate"] = round((test_data["failures"] / test_data["total"]) * 100, 2)
-            except:
-                test_data["failure_rate"] = 0
-
-            # TODO set tags in model
-            test_data["tags"] = []
-            test_data["samplers"] = get_sampler_types(test_data["project_id"], test_data["build_id"],
-                                                      test_data["name"], test_data["lg_type"])
+            # todo: samplers and analytics_control should be inside pydantic model
+            test_data["samplers"] = get_sampler_types(
+                test_data["project_id"], test_data["build_id"],
+                test_data["name"], test_data["lg_type"]
+            )
             analytics_control = render_analytics_control(test_data["requests"])
-            log.info("*****************************")
-            log.info(test_data)
-            log.info("*****************************")
-            log.info(analytics_control)
-            log.info("*****************************")
 
             with context.app.app_context():
                 return self.descriptor.render_template(

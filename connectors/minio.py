@@ -91,24 +91,24 @@ def get_requests_summary_data(build_id, test_name, lg_type, start_time, end_time
     bucket_name = f'p--{project_id}.{test_name}'
     file_name = f'{build_id}_{aggregation}.csv.gz'
     aggr = aggr.lower()
-    
+
     if scope and scope != 'All':
         scope_addon = f" where request_name='{scope}'"
     if scope != 'All':
         group_by = True
     if status != 'all':
         status_addon = f" and status='{status.upper()}'"
-    
+
     expression_addon = scope_addon + status_addon
-    
+
     if not (timestamps and users):
         timestamps, users = get_backend_users(build_id, test_name, aggregation)
     timestamps = calculate_timestamps(start_time, end_time)
-    
+
     response = client.select_object_content(bucket_name, file_name, expression_addon)
-    
+
     results = {}
-    
+
     if group_by:
         for line in response:
             if not line.get('request_name'):
@@ -124,5 +124,5 @@ def get_requests_summary_data(build_id, test_name, lg_type, start_time, end_time
             results['response'][ts] = None
         for line in response:
             results['response'][line['time']] = int(line[aggr])
-    
+
     return timestamps, results, users

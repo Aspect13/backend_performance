@@ -19,6 +19,8 @@ from tools import constants as c
 from ..models.api_reports import APIReport
 from pylon.core.tools import log
 
+from ..models.pd.report import ReportCreateSerializer
+
 
 def get_project_id(build_id: str) -> int:
     # return APIReport.query.filter_by(build_id=build_id).first().to_json()["project_id"]
@@ -45,62 +47,67 @@ def delete_test_data(build_id, test_name, lg_type):
     return True
 
 
-def get_test_details(project_id, build_id, test_name, lg_type):
-    test = {
-        "start_time": 0,
-        "name": test_name,
-        "environment": "",
-        "type": "",
-        "end_time": 0,
-        "failures": 0,
-        "total": 0,
-        "thresholds_missed": 0,
-        "throughput": 0,
-        "vusers": 0,
-        "duration": 0,
-        "1xx": 0,
-        "2xx": 0,
-        "3xx": 0,
-        "4xx": 0,
-        "5xx": 0,
-        "build_id": build_id,
-        "lg_type": lg_type,
-        "requests": []
-    }
-    q_start_time = f"select time, active from {lg_type}_{project_id}..\"users\" " \
-                   f"where build_id='{build_id}' order by time asc limit 1"
-    q_end_time = f"select time, active from {lg_type}_{project_id}..\"users\" " \
-                 f"where build_id='{build_id}' order by time desc limit 1"
-    q_response_codes = f"select \"1xx\", \"2xx\", \"3xx\", \"4xx\", \"5xx\", \"ko\" as KO, " \
-                       f"\"total\" as Total, \"throughput\" from comparison_{project_id}..api_comparison " \
-                       f"where build_id='{build_id}' and request_name='All'"
-    q_total_users = f"show tag values on comparison_{project_id} with key=\"users\" where build_id='{build_id}'"
-    q_env = f"show tag values on comparison_{project_id} with key=\"env\" where build_id='{build_id}'"
-    q_type = f"show tag values on comparison_{project_id} with key=\"test_type\" where build_id='{build_id}'"
-    q_requests_name = f"show tag values on comparison_{project_id} with key=\"request_name\" " \
-                      f"where build_id='{build_id}'"
-    client = influx_tools.get_client(project_id)
-    test["start_time"] = list(client.query(q_start_time)["users"])[0]["time"]
-    test["end_time"] = list(client.query(q_end_time)["users"])[0]["time"]
-    test["duration"] = round(c.str_to_timestamp(test["end_time"]) - c.str_to_timestamp(test["start_time"]), 1)
-    test["vusers"] = list(client.query(q_total_users)["api_comparison"])[0]["value"]
-    test["environment"] = list(client.query(q_env)["api_comparison"])[0]["value"]
-    test["type"] = list(client.query(q_type)["api_comparison"])[0]["value"]
-    test["requests"] = [name["value"] for name in client.query(q_requests_name)["api_comparison"]]
+# def get_test_details(project_id: int, build_id: str, test_name: str, lg_type: str) -> dict:
+def get_test_details(test_pd: ReportCreateSerializer) -> ReportCreateSerializer:
+    q_start_time = f'''
+        select time, active from {test_pd.lg_type}_{test_pd.project_id}.."users" 
+        where build_id='{test_pd.build_id}' order by time asc limit 1
+    '''.replace('\n', ' ')
+    q_end_time = f'''
+        select time, active from {test_pd.lg_type}_{test_pd.project_id}.."users" 
+        where build_id='{test_pd.build_id}' order by time desc limit 1
+    '''.replace('\n', ' ')
+    q_response_codes = f'''
+        select "1xx", "2xx", "3xx", "4xx", "5xx", "ko" as KO, 
+        "total" as Total, "throughput" from comparison_{test_pd.project_id}..api_comparison 
+        where build_id='{test_pd.build_id}' and request_name='All'
+    '''.replace('\n', ' ')
+    # q_total_users = f"show tag values on comparison_{test_pd.project_id} with key=\"users\" where build_id='{test_pd.build_id}'"
+    q_total_users = f'''
+        show tag values on comparison_{test_pd.project_id} with key="users" 
+        where build_id='{test_pd.build_id}'
+    '''.replace('\n', ' ')
+    # q_env = f"show tag values on comparison_{test_pd.project_id} with key=\"env\" where build_id='{test_pd.build_id}'"
+    q_env = f'''
+        show tag values on comparison_{test_pd.project_id} with key="env" 
+        where build_id='{test_pd.build_id}'
+    '''.replace('\n', ' ')
+    # q_type = f"show tag values on comparison_{test_pd.project_id} with key=\"test_type\" where build_id='{test_pd.build_id}'"
+    q_type = f'''
+        show tag values on comparison_{test_pd.project_id} with key="test_type" 
+        where build_id='{test_pd.build_id}'
+    '''.replace('\n', ' ')
+    # q_requests_name = f"show tag values on comparison_{test_pd.project_id} with key=\"request_name\" " \
+    #                   f"where build_id='{test_pd.build_id}'"
+    q_requests_name = f'''
+        show tag values on comparison_{test_pd.project_id} with key="request_name"
+        where build_id='{test_pd.build_id}'
+    '''.replace('\n', ' ')
+    client = influx_tools.get_client(test_pd.project_id)
+    test_pd.start_time = list(client.query(q_start_time)["users"])[0]["time"]
+    test_pd.end_time = list(client.query(q_end_time)["users"])[0]["time"]
+    # test_pd.duration = round(test_pd.end_time.timestamp() - test_pd.start_time.timestamp(), 1)
+    test_pd.vusers = list(client.query(q_total_users)["api_comparison"])[0]["value"]
+    test_pd.environment = list(client.query(q_env)["api_comparison"])[0]["value"]
+    test_pd.type = list(client.query(q_type)["api_comparison"])[0]["value"]
+    test_pd.requests = [name["value"] for name in client.query(q_requests_name)["api_comparison"]]
     response_data = list(client.query(q_response_codes)['api_comparison'])[0]
-    test['total'] = response_data['Total']
-    test['failures'] = response_data['KO']
-    test['throughput'] = round(response_data['throughput'], 1)
-    test['1xx'] = response_data['1xx']
-    test['2xx'] = response_data['2xx']
-    test['3xx'] = response_data['3xx']
-    test['4xx'] = response_data['4xx']
-    test['5xx'] = response_data['5xx']
-    return test
+    test_pd.total = response_data['Total']
+    test_pd.failures = response_data['KO']
+    test_pd.throughput = response_data['throughput']
+    test_pd.onexx = response_data['1xx']
+    test_pd.twoxx = response_data['2xx']
+    test_pd.threexx = response_data['3xx']
+    test_pd.fourxx = response_data['4xx']
+    test_pd.fivexx = response_data['5xx']
+    return test_pd.validate(test_pd.dict())
 
 
-def get_backend_requests(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
-                         timestamps=None, users=None, scope=None, aggr='pct95', status='all'):
+def get_backend_requests(build_id, test_name, lg_type,
+                         start_time: datetime, end_time: datetime,
+                         aggregation, sampler,
+                         timestamps=None, users=None, scope=None, aggr='pct95', status='all'
+                         ):
     """
     :param build_id: - could be obtained from control_tower during tests execution
     :param test_name: - name of the test used as measurement in database
@@ -108,7 +115,6 @@ def get_backend_requests(build_id, test_name, lg_type, start_time, end_time, agg
     :param start_time
     :param end_time
     :return:
-
     """
     scope_addon = ""
     status_addon = ""
@@ -128,7 +134,7 @@ def get_backend_requests(build_id, test_name, lg_type, start_time, end_time, agg
         timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
     query = f"select time, {group_by}percentile(\"{aggr}\", 95) as rt " \
             f"from {lg_type}_{project_id}..{test_name}_{aggregation} " \
-            f"where time>='{start_time}' and time<='{end_time}' {status_addon} and sampler_type='{sampler}' and " \
+            f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' {status_addon} and sampler_type='{sampler}' and " \
             f"build_id='{build_id}' {scope_addon} group by {group_by}time({aggregation})"
     res = influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregation}"]
     results = {}
@@ -150,7 +156,7 @@ def get_backend_requests(build_id, test_name, lg_type, start_time, end_time, agg
     return timestamps, results, users
 
 
-def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
+def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time: datetime, end_time: datetime, aggregation, sampler,
                          timestamps=None, users=None, scope=None, aggr='pct95', status='all'):
     """
     :param build_id: - could be obtained from control_tower during tests execution
@@ -179,7 +185,7 @@ def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time,
     if not (timestamps and users):
         timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
     query = f"select time, percentile(\"{aggr}\", 95) as rt from {lg_type}_{project_id}..{test_name}_{aggregation} " \
-            f"where time>='{start_time}' and time<='{end_time}' {status_addon} and sampler_type='{sampler}' and " \
+            f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' {status_addon} and sampler_type='{sampler}' and " \
             f"build_id='{build_id}' {scope_addon} group by {group_by}time({aggregation})"
     res = influx_tools.get_client(project_id).query(query)
     res = res.items()
@@ -196,11 +202,11 @@ def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time,
     return timestamps, data, users
 
 
-def get_backend_users(build_id, lg_type, start_time, end_time, aggregation):
+def get_backend_users(build_id, lg_type, start_time: datetime, end_time: datetime, aggregation):
     project_id = get_project_id(build_id)
     query = f"select sum(\"max\") from (select max(\"active\") from {lg_type}_{project_id}..\"users_{aggregation}\" " \
             f"where build_id='{build_id}' group by lg_id) " \
-            f"WHERE time>='{start_time}' and time<='{end_time}' GROUP BY time(1s)"
+            f"WHERE time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' GROUP BY time(1s)"
     client = influx_tools.get_client(project_id)
     res = client.query(query)[f'users_{aggregation}']
     timestamps = []
@@ -232,7 +238,7 @@ def get_hits_tps(build_id, test_name, lg_type, start_time, end_time, aggregation
     return timestamps, results, users
 
 
-def get_hits(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
+def get_hits(build_id, test_name, lg_type, start_time: datetime, end_time: datetime, aggregation, sampler,
              timestamps=None, users=None, scope=None, status='all'):
     project_id = get_project_id(build_id)
     if not (timestamps and users):
@@ -244,7 +250,7 @@ def get_hits(build_id, test_name, lg_type, start_time, end_time, aggregation, sa
     if status != 'all':
         status_addon = f" and status='{status.upper()}'"
     hits_query = f"select hit from {lg_type}_{project_id}..{test_name} where " \
-                 f"time>='{start_time}' and time<='{end_time}'{status_addon} and sampler_type='{sampler}' and" \
+                 f"time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}'{status_addon} and sampler_type='{sampler}' and" \
                  f" build_id='{build_id}' {scope_addon}"
     results = {"hits": {}}
     res = influx_tools.get_client(project_id).query(hits_query)[test_name]
@@ -531,7 +537,7 @@ def get_response_time_per_test(build_id, test_name, lg_type, sampler, scope, agg
     return round(list(influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregator}"])[0]["rt"], 2)
 
 
-def calculate_auto_aggregation(build_id, test_name, lg_type, start_time, end_time):
+def calculate_auto_aggregation(build_id, test_name, lg_type, start_time: datetime, end_time: datetime):
     project_id = get_project_id(build_id)
     client = influx_tools.get_client(project_id)
     aggregation = "1s"
@@ -539,7 +545,8 @@ def calculate_auto_aggregation(build_id, test_name, lg_type, start_time, end_tim
     for i in range(len(aggr_list)):
         aggr = aggr_list[i]
         query = f"select sum(\"count\") from (select count(pct95) from {lg_type}_{project_id}..{test_name}_{aggr} " \
-                f"where time>='{start_time}' and time<='{end_time}' and build_id='{build_id}' group by time({aggr}))"
+                f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' and build_id='{build_id}'" \
+                f" group by time({aggr}))"
         result = list(client.query(query)[f"{test_name}_{aggr}"])
         if result:
             if int(result[0]["sum"]) > c.MAX_DOTS_ON_CHART and aggregation != "10m":

@@ -262,7 +262,7 @@ const EngineHealthLegend = {
         update_charts() {
             Object.entries(window.engine_health.charts).forEach(([chart_name, {chart}]) => {
                 chart.update()
-                vueVm.registered_components[`engine_health_legend_${chart_name}`]?.load()
+                this.$root.registered_components[`engine_health_legend_${chart_name}`]?.load()
             })
         },
         // handle_new_color_for_host(host) {
@@ -317,9 +317,9 @@ const EngineHealthMetricsLegend = {
         LegendItem: LegendItem
     },
     async mounted() {
-        await wait_for('vueVm')
-        this.metric_select = await wait_for(`${this.for_chart}_metric_select`, vueVm.registered_components)
-        this.legend = await wait_for('engine_health_chart_legend', vueVm.registered_components)
+        // await wait_for('vueVm')
+        this.metric_select = await wait_for(`${this.for_chart}_metric_select`, this.$root.registered_components)
+        this.legend = await wait_for('engine_health_chart_legend', this.$root.registered_components)
     },
     data() {
         return {
