@@ -1,6 +1,6 @@
 {
   "name": "Carrier Backend Tests RestAPI Plugin",
-  "version": "0.1",
-  "depends_on": ["shared", "projects", "tasks", "theme", "security"],
+  "version": "0.2",
+  "depends_on": ["shared", "projects", "tasks", "theme"],
   "init_after": ["integrations"]
 }

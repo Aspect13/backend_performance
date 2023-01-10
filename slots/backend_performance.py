@@ -1,3 +1,5 @@
+from queue import Empty
+
 from pylon.core.tools import web, log  # pylint: disable=E0611,E0401
 from tools import auth  # pylint: disable=E0401
 
@@ -14,8 +16,10 @@ class Slot:  # pylint: disable=E1101,R0903
         except:
             pass
         project_regions = context.rpc_manager.call.get_rabbit_queues(f"project_{project_id}_vhost")
-        cloud_regions = context.rpc_manager.timeout(5).integrations_get_cloud_integrations(
-                project_id)
+        try:
+            cloud_regions = context.rpc_manager.timeout(3).integrations_get_cloud_integrations(project_id)
+        except Empty:
+            cloud_regions = []
         with context.app.app_context():
             return self.descriptor.render_template(
                 'backend_performance/content.html',
