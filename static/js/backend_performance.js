@@ -725,7 +725,7 @@ const TestCreateModal = {
             // special fields
             this.test_parameters.set(test_parameters_filtered)
             this.source.set(source)
-            integrations && this.integrations.set(integrations)
+            integrations && this.integrations?.set(integrations)
             scheduling && this.scheduling.set(scheduling)
 
             rest?.customization && $(this.$refs.advanced_params).collapse('show')
@@ -882,7 +882,7 @@ const TestRunModal = {
             // special fields
             this.test_parameters.set(test_parameters)
 
-            this.integrations.set(integrations)
+            this.integrations?.set(integrations)
             this.show()
         },
         show() {
@@ -902,7 +902,7 @@ const TestRunModal = {
         },
         get_data() {
             const test_params = this.test_parameters.get()
-            const integrations = this.integrations.get()
+            const integrations = this.integrations?.get()
             const name = test_params.find(i => i.name === 'test_name')
             const test_type = test_params.find(i => i.name === 'test_type')
             const env_type = test_params.find(i => i.name === 'env_type')
@@ -969,7 +969,7 @@ const TestRunModal = {
                     this.integrations?.clearErrors()
             } else {
                 this.test_parameters.clearErrors()
-                this.integrations.clearErrors()
+                this.integrations?.clearErrors()
             }
         }
     },
