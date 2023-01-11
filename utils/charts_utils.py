@@ -173,6 +173,7 @@ def get_data_from_influx(args):
 
 
 def prepare_comparison_responses(args):
+    log.info('prepare_comparison_responses %s', args)
     tests = args['id[]']
     tests_meta = []
     longest_test = 0
@@ -184,14 +185,17 @@ def prepare_comparison_responses(args):
             longest_time = data['duration']
             longest_test = i
         tests_meta.append(data)
-    start_time, end_time, aggregation = calculate_proper_timeframe(tests_meta[longest_test]['build_id'],
-                                                                   tests_meta[longest_test]['name'],
-                                                                   tests_meta[longest_test]['lg_type'],
-                                                                   args.get('low_value', 0),
-                                                                   args.get('high_value', 100),
-                                                                   tests_meta[longest_test]['start_time'],
-                                                                   tests_meta[longest_test]['end_time'],
-                                                                   args.get('aggregator', 'auto'))
+    log.info(f"args {tests_meta[longest_test]}")
+    _parsed_args = TimeframeArgs(**args, **tests_meta[longest_test])
+    start_time, end_time, aggregation = calculate_proper_timeframe(**_parsed_args.dict())
+    # start_time, end_time, aggregation = calculate_proper_timeframe(tests_meta[longest_test]['build_id'],
+    #                                                                tests_meta[longest_test]['name'],
+    #                                                                tests_meta[longest_test]['lg_type'],
+    #                                                                args.get('low_value', 0),
+    #                                                                args.get('high_value', 100),
+    #                                                                tests_meta[longest_test]['start_time'],
+    #                                                                tests_meta[longest_test]['end_time'],
+    #                                                                args.get('aggregator', 'auto'))
     # if args.get('aggregator', 'auto') != "auto":
     #     aggregation = args.get('aggregator')
     metric = args.get('metric', '')

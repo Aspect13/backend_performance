@@ -13,7 +13,7 @@ from ..utils.utils import run_test
 
 
 class RPC:
-    @web.rpc('backend_performance_results_or_404', 'results_or_404')
+    @web.rpc('backend_results_or_404', 'results_or_404')
     @rpc_tools.wrap_exceptions(RuntimeError)
     def backend_performance_results_or_404(self, run_id):
         return Report.query.get_or_404(run_id)
