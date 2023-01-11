@@ -1,7 +1,7 @@
 from pylon.core.tools import web, log  # pylint: disable=E0611,E0401
 from tools import auth, theme  # pylint: disable=E0401
 from ..connectors.influx import get_sampler_types
-from ..models.api_reports import APIReport
+from ..models.reports import Report
 from ..utils.report_utils import render_analytics_control
 
 
@@ -10,7 +10,7 @@ class Slot:  # pylint: disable=E1101,R0903
     def content(self, context, slot, payload):
         result_id = payload.request.args.get('result_id')
         if result_id:
-            test_data = APIReport.query.get_or_404(result_id).to_json()
+            test_data = Report.query.get_or_404(result_id).to_json()
             # todo: samplers and analytics_control should be inside pydantic model
             test_data["samplers"] = get_sampler_types(
                 test_data["project_id"], test_data["build_id"],
@@ -32,7 +32,7 @@ class Slot:  # pylint: disable=E1101,R0903
         result_id = payload.request.args.get('result_id')
         source_data = {}
         if result_id:
-            test_data = APIReport.query.get_or_404(result_id).to_json()
+            test_data = Report.query.get_or_404(result_id).to_json()
             source_data = test_data['test_config'].get('source')
             analytics_control = render_analytics_control(test_data["requests"])
 

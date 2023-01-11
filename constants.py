@@ -85,12 +85,12 @@ if c.LOCAL_DEV:
 
 EXECUTABLE_MAPPING = {
     "gatling": {
-        "container": f"getcarrier/executable_jar_runner:{CURRENT_RELEASE}-gatling",
+        "container": f"getcarrier/executable_jar_runner:{c.CURRENT_RELEASE}-gatling",
         "job_type": "perfgun",
         "influx_db": "{{secret.gatling_db}}"
     },
     "base (in development)": {
-        "container": f"getcarrier/executable_jar_runner:{CURRENT_RELEASE}-base",
+        "container": f"getcarrier/executable_jar_runner:{c.CURRENT_RELEASE}-base",
         "job_type": "perfgun",
         "influx_db": "{{secret.gatling_db}}"
     }

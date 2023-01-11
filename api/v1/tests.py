@@ -6,7 +6,7 @@ from flask_restful import Resource
 from flask import request
 
 from tools import api_tools
-from ...models.api_tests import PerformanceApiTest
+from ...models.tests import Test
 from ...models.pd.test_parameters import PerformanceTestParam
 from ...utils.utils import run_test, parse_test_data, compile_tests
 
@@ -20,7 +20,7 @@ class API(Resource):
         self.module = module
 
     def get(self, project_id: int):
-        total, res = api_tools.get(project_id, request.args, PerformanceApiTest)
+        total, res = api_tools.get(project_id, request.args, Test)
         rows = []
         for i in res:
             test = i.api_json()
@@ -37,7 +37,7 @@ class API(Resource):
     @staticmethod
     def get_schedules_ids(filter_) -> set:
         r = set()
-        for i in PerformanceApiTest.query.with_entities(PerformanceApiTest.schedules).filter(
+        for i in Test.query.with_entities(Test.schedules).filter(
                 filter_
         ).all():
             r.update(set(*i))
@@ -51,8 +51,8 @@ class API(Resource):
             return 'IDs must be integers', 400
 
         filter_ = and_(
-            PerformanceApiTest.project_id == project.id,
-            PerformanceApiTest.id.in_(delete_ids)
+            Test.project_id == project.id,
+            Test.id.in_(delete_ids)
         )
 
         try:
@@ -62,10 +62,10 @@ class API(Resource):
         except Empty:
             ...
 
-        PerformanceApiTest.query.filter(
+        Test.query.filter(
             filter_
         ).delete()
-        PerformanceApiTest.commit()
+        Test.commit()
 
         return {'ids': delete_ids}, 200
 
@@ -116,7 +116,7 @@ class API(Resource):
                     project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
                 compile_tests(project.id, compile_file_name, test_data["runner"])
 
-        test = PerformanceApiTest(**test_data)
+        test = Test(**test_data)
         test.insert()
 
         test.handle_change_schedules(schedules)

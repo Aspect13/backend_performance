@@ -27,8 +27,8 @@ from ..constants import JOB_CONTAINER_MAPPING
 from .pd.test_parameters import PerformanceTestParams
 
 
-class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin):
-    __tablename__ = "backend_test"
+class Test(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin):
+    __tablename__ = "backend_tests"
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
     uid = Column(String(128), unique=True, nullable=False)

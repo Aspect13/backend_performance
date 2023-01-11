@@ -11,13 +11,13 @@ from io import BytesIO
 from urllib.parse import urlunparse, urlparse
 import requests
 from pylon.core.tools import log
-from flask import current_app, request, make_response
+from flask import current_app, request
 
 from ...models.pd.report import ReportCreateSerializer, ReportGetSerializer
 from ...models.pd.test_parameters import PerformanceTestParamsRun
-from ...models.api_baseline import APIBaseline
-from ...models.api_reports import APIReport
-from ...models.api_tests import PerformanceApiTest
+from ...models.baselines import Baseline
+from ...models.reports import Report
+from ...models.tests import Test
 from ...connectors.influx import get_test_details, delete_test_data
 from tools import MinioClient, api_tools
 from influxdb.exceptions import InfluxDBClientError
@@ -34,10 +34,10 @@ class API(Resource):
     def get(self, project_id: int):
         args = request.args
         if args.get("report_id"):
-            report = APIReport.query.filter_by(project_id=project_id, id=args.get("report_id")).first()
+            report = Report.query.filter_by(project_id=project_id, id=args.get("report_id")).first()
             return ReportGetSerializer.from_orm(report).dict(), 200
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
-        total, res = api_tools.get(project.id, args, APIReport)
+        total, res = api_tools.get(project.id, args, Report)
         reports = parse_obj_as(List[ReportGetSerializer], res)
         return {"total": total, "rows": [i.dict() for i in reports]}, 200
 
@@ -55,8 +55,8 @@ class API(Resource):
         # test_config = None
         if 'test_params' in args:
             try:
-                test = PerformanceApiTest.query.filter(
-                    PerformanceApiTest.uid == args.get('test_id')
+                test = Test.query.filter(
+                    Test.uid == args.get('test_id')
                 ).first()
                 # test._session.expunge(test) # maybe we'll need to detach object from orm
                 test.__dict__['test_parameters'] = test.filtered_test_parameters_unsecret(
@@ -69,7 +69,7 @@ class API(Resource):
                 return f'Error parsing params from control tower: {e}', 400
 
         report_model = ReportCreateSerializer(**args, project_id=project.id)
-        # report = APIReport(
+        # report = Report(
         #     name=args["test_name"],
         #     project_id=project.id,
         #     environment=args["environment"],
@@ -102,7 +102,7 @@ class API(Resource):
         # )
         # if test_config:
         #     report.test_config = test_config
-        report = APIReport(**report_model.dict())
+        report = Report(**report_model.dict())
         report.insert()
         # statistic = Statistic.query.filter_by(project_id=project_id).first()
         # setattr(statistic, 'performance_test_runs', Statistic.performance_test_runs + 1)
@@ -114,9 +114,9 @@ class API(Resource):
         args = request.json
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
 
-        report = APIReport.query.filter(
-            APIReport.project_id == project.id,
-            APIReport.build_id == args["build_id"]
+        report = Report.query.filter(
+            Report.project_id == project.id,
+            Report.build_id == args["build_id"]
         ).first()
 
         report_model = get_test_details(ReportCreateSerializer.from_orm(report))
@@ -139,10 +139,10 @@ class API(Resource):
         except TypeError:
             return 'IDs must be integers', 400
         # query only needed fields
-        query_result = APIReport.query.with_entities(
-            APIReport.build_id, APIReport.name, APIReport.lg_type
+        query_result = Report.query.with_entities(
+            Report.build_id, Report.name, Report.lg_type
         ).filter(
-            and_(APIReport.project_id == project.id, APIReport.id.in_(delete_ids))
+            and_(Report.project_id == project.id, Report.id.in_(delete_ids))
         ).all()
         for build_id, name, lg_type in query_result:
             log.info('DELETE query (%s)', (build_id, name, lg_type))
@@ -152,20 +152,20 @@ class API(Resource):
                 log.warning('InfluxDBClientError %s', e)
 
         # bulk delete baselines
-        APIBaseline.query.filter(
-            APIBaseline.project_id == project.id,
-            APIBaseline.report_id.in_(delete_ids)
+        Baseline.query.filter(
+            Baseline.project_id == project.id,
+            Baseline.report_id.in_(delete_ids)
         ).delete()
 
         # bulk delete reports
-        APIReport.query.filter(
-            APIReport.project_id == project.id,
-            APIReport.id.in_(delete_ids)
+        Report.query.filter(
+            Report.project_id == project.id,
+            Report.id.in_(delete_ids)
         ).delete()
         return {"message": "deleted"}, 204
 
 
-def write_test_run_logs_to_minio_bucket(test: APIReport, project):
+def write_test_run_logs_to_minio_bucket(test: Report, project):
     loki_settings_url = urlparse(current_app.config["CONTEXT"].settings.get('loki', {}).get('url'))
     if loki_settings_url:
         #

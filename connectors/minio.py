@@ -15,12 +15,12 @@
 from datetime import datetime, timedelta
 from tools import constants as c
 from tools import MinioClient, rpc_tools
-from ..models.api_reports import APIReport
+from ..models.reports import Report
 from pylon.core.tools import log
 
 
 def get_project_id(build_id: str) -> int:
-    resp = APIReport.query.with_entities(APIReport.project_id).filter(APIReport.build_id == build_id).first()
+    resp = Report.query.with_entities(Report.project_id).filter(Report.build_id == build_id).first()
     return resp[0]
 
 

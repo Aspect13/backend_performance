@@ -16,15 +16,15 @@ from datetime import datetime, timezone
 
 from tools import influx_tools
 from tools import constants as c
-from ..models.api_reports import APIReport
+from ..models.reports import Report
 from pylon.core.tools import log
 
 from ..models.pd.report import ReportCreateSerializer
 
 
 def get_project_id(build_id: str) -> int:
-    # return APIReport.query.filter_by(build_id=build_id).first().to_json()["project_id"]
-    resp = APIReport.query.with_entities(APIReport.project_id).filter(APIReport.build_id == build_id).first()
+    # return Report.query.filter_by(build_id=build_id).first().to_json()["project_id"]
+    resp = Report.query.with_entities(Report.project_id).filter(Report.build_id == build_id).first()
     return resp[0]
 
 
@@ -134,7 +134,9 @@ def get_backend_requests(build_id, test_name, lg_type,
         timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
     query = f"select time, {group_by}percentile(\"{aggr}\", 95) as rt " \
             f"from {lg_type}_{project_id}..{test_name}_{aggregation} " \
-            f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' {status_addon} and sampler_type='{sampler}' and " \
+            f"where time >= '{start_time.isoformat(sep=' ', timespec='seconds')}' and " \
+            f"time <='{end_time.isoformat(sep=' ', timespec='seconds')}' {status_addon} and " \
+            f"sampler_type='{sampler}' and " \
             f"build_id='{build_id}' {scope_addon} group by {group_by}time({aggregation})"
     res = influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregation}"]
     results = {}
@@ -202,11 +204,12 @@ def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time:
     return timestamps, data, users
 
 
-def get_backend_users(build_id, lg_type, start_time: datetime, end_time: datetime, aggregation):
+def get_backend_users(build_id: str, lg_type: str, start_time: datetime, end_time: datetime, aggregation: str):
     project_id = get_project_id(build_id)
     query = f"select sum(\"max\") from (select max(\"active\") from {lg_type}_{project_id}..\"users_{aggregation}\" " \
             f"where build_id='{build_id}' group by lg_id) " \
-            f"WHERE time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' GROUP BY time(1s)"
+            f"WHERE time >= '{start_time.isoformat(sep=' ', timespec='seconds')}' and " \
+            f"time <= '{end_time.isoformat(sep=' ', timespec='seconds')}' GROUP BY time(1s)"
     client = influx_tools.get_client(project_id)
     res = client.query(query)[f'users_{aggregation}']
     timestamps = []
@@ -537,17 +540,25 @@ def get_response_time_per_test(build_id, test_name, lg_type, sampler, scope, agg
     return round(list(influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregator}"])[0]["rt"], 2)
 
 
-def calculate_auto_aggregation(build_id, test_name, lg_type, start_time: datetime, end_time: datetime):
+def calculate_auto_aggregation(build_id: str, test_name: str, lg_type: str, start_time: datetime, end_time: datetime):
     project_id = get_project_id(build_id)
     client = influx_tools.get_client(project_id)
     aggregation = "1s"
     aggr_list = ["1s", "5s", "30s", "1m", "5m", "10m"]
     for i in range(len(aggr_list)):
         aggr = aggr_list[i]
-        query = f"select sum(\"count\") from (select count(pct95) from {lg_type}_{project_id}..{test_name}_{aggr} " \
-                f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' and build_id='{build_id}'" \
-                f" group by time({aggr}))"
-        result = list(client.query(query)[f"{test_name}_{aggr}"])
+        table_name = f'{lg_type}_{project_id}..{test_name}_{aggr}'
+        query = f"select sum(\"count\") from (select count(pct95) from {table_name} " \
+                "where time >= $start_time and time <= $end_time and build_id = $build_id " \
+                f"group by time({aggr}))"
+        query_args = {
+            'start_time': start_time.isoformat(sep=' ', timespec='seconds'),
+            'end_time': end_time.isoformat(sep=' ', timespec='seconds'),
+            'build_id': build_id
+        }
+
+        log.info('q args %s', query_args)
+        result = list(client.query(query, bind_params=query_args)[f"{test_name}_{aggr}"])
         if result:
             if int(result[0]["sum"]) > c.MAX_DOTS_ON_CHART and aggregation != "10m":
                 aggregation = aggr_list[i + 1]

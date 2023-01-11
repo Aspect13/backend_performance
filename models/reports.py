@@ -17,8 +17,8 @@ from sqlalchemy import String, Column, Integer, Float, Text, ARRAY, JSON, DateTi
 from tools import db_tools, db
 
 
-class APIReport(db_tools.AbstractBaseMixin, db.Base):
-    __tablename__ = "backend_report"
+class Report(db_tools.AbstractBaseMixin, db.Base):
+    __tablename__ = "backend_reports"
 
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
@@ -26,8 +26,8 @@ class APIReport(db_tools.AbstractBaseMixin, db.Base):
     name = Column(String(128), unique=False)
     environment = Column(String(128), unique=False)
     type = Column(String(128), unique=False)
-    start_time = Column(DateTime, unique=False)
-    end_time = Column(DateTime, unique=False)
+    start_time = Column(DateTime(timezone=True), unique=False)
+    end_time = Column(DateTime(timezone=True), unique=False)
     failures = Column(Integer, unique=False)
     total = Column(Integer, unique=False)
     thresholds_missed = Column(Integer, unique=False, nullable=True)
@@ -74,8 +74,8 @@ class APIReport(db_tools.AbstractBaseMixin, db.Base):
 
     def insert(self):
         if not self.test_config:
-            from .api_tests import PerformanceApiTest
-            self.test_config = PerformanceApiTest.query.filter(
-                PerformanceApiTest.uid == self.uid
+            from .tests import Test
+            self.test_config = Test.query.filter(
+                Test.uid == self.uid
             ).first().api_json()
         super().insert()

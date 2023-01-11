@@ -153,7 +153,7 @@ def render_analytics_control(requests: list) -> dict:
 
 
 def calculate_proper_timeframe(build_id: str, test_name: str, lg_type: str, low_value: int, high_value: int,
-                               start_time: datetime, end_time: Union[str, datetime], aggregation: str,
+                               start_time: datetime, end_time: datetime, aggregation: str,
                                time_as_ts: bool = False, source: str = None) -> tuple:
     start_time_ts = start_time.timestamp()
     end_time_ts = end_time.timestamp()
@@ -169,13 +169,15 @@ def calculate_proper_timeframe(build_id: str, test_name: str, lg_type: str, low_
     # t_format = "%Y-%m-%dT%H:%M:%S.000Z"
     # start_time = datetime.fromtimestamp(start_time_ts).strftime(t_format)
     # end_time = datetime.fromtimestamp(end_time).strftime(t_format)
+    _start_time = datetime.utcfromtimestamp(start_time_ts)
+    _end_time = datetime.utcfromtimestamp(end_time_ts)
     if aggregation == 'auto' and build_id:
         if source == 'minio':
             aggregation = calculate_auto_aggregation_minio(build_id, test_name, lg_type,
-                                                           start_time=datetime.fromtimestamp(start_time_ts),
-                                                           end_time=datetime.fromtimestamp(end_time_ts))
+                                                           start_time=_start_time,
+                                                           end_time=_end_time)
         else:
             aggregation = calculate_auto_aggregation_influx(build_id, test_name, lg_type,
-                                                            start_time=datetime.fromtimestamp(start_time_ts),
-                                                            end_time=datetime.fromtimestamp(end_time_ts))
-    return start_time, end_time, aggregation
+                                                            start_time=_start_time,
+                                                            end_time=_end_time)
+    return _start_time, _end_time, aggregation

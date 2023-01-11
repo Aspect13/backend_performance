@@ -1,8 +1,8 @@
 from typing import Optional
 from pydantic import BaseModel, validator, AnyUrl, parse_obj_as, root_validator, constr
 
-from ..api_tests import PerformanceApiTest
-from ..api_reports import APIReport
+from ..tests import Test
+from ..reports import Report
 
 
 class ThresholdPD(BaseModel):
@@ -17,17 +17,17 @@ class ThresholdPD(BaseModel):
 
     @validator('test')
     def validate_test_exists(cls, value: str, values: dict):
-        assert PerformanceApiTest.query.filter(
-            PerformanceApiTest.project_id == values['project_id'],
-            PerformanceApiTest.name == value
+        assert Test.query.filter(
+            Test.project_id == values['project_id'],
+            Test.name == value
         ).first(), f'Test with name {value} does not exist'
         return value
 
     @validator('environment')
     def validate_env_exists(cls, value: str, values: dict):
-        assert APIReport.query.filter(
-            APIReport.environment == value,
-            APIReport.project_id == values['project_id']
+        assert Report.query.filter(
+            Report.environment == value,
+            Report.project_id == values['project_id']
         ).first(), 'Result with this environment does not exist'
         return value
 
@@ -36,9 +36,9 @@ class ThresholdPD(BaseModel):
         if value in ['all', 'every']:
             return value
 
-        assert APIReport.query.filter(
-            APIReport.project_id == values['project_id'],
-            APIReport.requests.contains(value)
+        assert Report.query.filter(
+            Report.project_id == values['project_id'],
+            Report.requests.contains(value)
         ).first(), 'Such scope does not exist'
         return value
 

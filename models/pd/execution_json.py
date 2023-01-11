@@ -76,7 +76,7 @@ class ExecutionParams(PerformanceTestParams):
         return temp
 
     @classmethod
-    def from_orm(cls, db_object: 'PerformanceApiTest'):
+    def from_orm(cls, db_object: 'Test'):
         return cls(**dict(
             job_type=db_object.job_type,
             entrypoint=db_object.entrypoint,
@@ -111,7 +111,7 @@ class CcEnvVars(BaseModel):
         return temp
 
     @classmethod
-    def from_orm(cls, db_object: 'PerformanceApiTest'):
+    def from_orm(cls, db_object: 'Test'):
         public_queues = db_object.rpc.call.get_rabbit_queues("carrier")
         if db_object.location not in public_queues:
             return cls(

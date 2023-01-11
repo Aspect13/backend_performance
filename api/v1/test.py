@@ -5,7 +5,7 @@ from flask import request
 from flask_restful import Resource
 from pylon.core.tools import log
 
-from ...models.api_tests import PerformanceApiTest
+from ...models.tests import Test
 from ...models.pd.test_parameters import PerformanceTestParam, PerformanceTestParams
 from ...utils.utils import run_test, parse_test_data
 
@@ -21,8 +21,8 @@ class API(Resource):
 
     def get(self, project_id: int, test_id: Union[int, str]):
         project = self.module.context.rpc_manager.call.project_get_or_404(project_id=project_id)
-        test = PerformanceApiTest.query.filter(
-            PerformanceApiTest.get_api_filter(project_id, test_id)
+        test = Test.query.filter(
+            Test.get_api_filter(project_id, test_id)
         ).first()
         output = request.args.get('output')
 
@@ -71,12 +71,12 @@ class API(Resource):
             ).dict()
         )
 
-        test_query = PerformanceApiTest.query.filter(PerformanceApiTest.get_api_filter(project_id, test_id))
+        test_query = Test.query.filter(Test.get_api_filter(project_id, test_id))
 
         schedules = test_data.pop('scheduling', [])
 
         test_query.update(test_data)
-        PerformanceApiTest.commit()
+        Test.commit()
         test = test_query.one()
 
         test.handle_change_schedules(schedules)
@@ -116,8 +116,8 @@ class API(Resource):
         if errors:
             return errors, 400
 
-        test = PerformanceApiTest.query.filter(
-            PerformanceApiTest.get_api_filter(project_id, test_id)
+        test = Test.query.filter(
+            Test.get_api_filter(project_id, test_id)
         ).first()
 
         if purpose == 'control_tower':

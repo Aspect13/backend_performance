@@ -3,8 +3,8 @@ from sqlalchemy import Column, Integer, String, JSON, ARRAY
 from tools import db_tools, db
 
 
-class APIBaseline(db_tools.AbstractBaseMixin, db.Base):
-    __tablename__ = "backend_baseline"
+class Baseline(db_tools.AbstractBaseMixin, db.Base):
+    __tablename__ = "backend_baselines"
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
     report_id = Column(Integer, unique=False, nullable=False)
@@ -13,9 +13,9 @@ class APIBaseline(db_tools.AbstractBaseMixin, db.Base):
     summary = Column(ARRAY(JSON), unique=False, nullable=False)
 
     def insert(self):
-        APIBaseline.query.filter(
-            APIBaseline.project_id == self.project_id,
-            APIBaseline.test == self.test,
-            APIBaseline.environment == self.environment
+        Baseline.query.filter(
+            Baseline.project_id == self.project_id,
+            Baseline.test == self.test,
+            Baseline.environment == self.environment
         ).delete()
         super().insert()
