@@ -1,3 +1,9 @@
+<script src="{{ url_for('design-system.static', filename='assets/vendor/chart.js/chart.min.js') }}"></script>
+<script src="{{ url_for('design-system.static', filename='assets/vendor/chart.js/chartjs-adapter-date-fns.bundle.min.js') }}"></script>
+
+<script src="{{ url_for('backend_performance.static', filename='js/chart_legend.js') }}"></script>
+<script src="{{ url_for('backend_performance.static', filename='js/responses_chart.js') }}"></script>
+<script src="{{ url_for('backend_performance.static', filename='js/engine_health.js') }}"></script>
 <script src="{{ url_for('design-system.static', filename='assets/js/dropdowns.js') }}"></script>
 <script src="{{ url_for('design-system.static', filename='assets/vendor/nouislider/nouislider.js') }}"></script>
 <script src="{{ url_for('design-system.static', filename='assets/vendor/nouislider/wNumb.min.js') }}"></script>
@@ -5,65 +11,37 @@
 <script src="{{ url_for('backend_performance.static', filename='js/components/AnalyticFilterDropdown.js') }}"></script>
 <script src="{{ url_for('backend_performance.static', filename='js/components/AnalyticFilterBlock.js') }}"></script>
 <script src="{{ url_for('backend_performance.static', filename='js/components/AnalyticFilter.js') }}"></script>
-<script src="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.js"></script>
+{#<script src="https://unpkg.com/bootstrap-table@1.15.5/dist/bootstrap-table.min.js"></script>#}
 <script src="{{ url_for('backend_performance.static', filename='js/logs_updater.js') }}"></script>
 <script src="{{ url_for('backend_performance.static', filename='js/in_progress.js') }}"></script>
 <script src="{{ url_for('backend_performance.static', filename='js/artifacts.js') }}"></script>
-<script>
-    let low_value = 0;
-    let high_value = 100;
-    $(document).ready(function() {
-
-        async function getTestStatus() {
-            const projectId = {{ test_data.project_id }}
-            const testId = {{ test_data.id }}
-            const response = await fetch(`/api/v1/backend_performance/reports/${projectId}/?report_id=${testId}`)
-            const {test_status: { percentage }} = await response.json();
-            checkTestStatus(percentage)
-        }
-        function checkTestStatus(percentage) {
-            if(percentage === 100) {
-                $('#AN').removeClass('disabled');
-                $('#analytic-loader').hide()
-            } else {
-                $('#AN').addClass('disabled')
-                $('#analytic-loader').show()
-                setTimeout(getTestStatus, 5000)
-            }
-        }
-
-
-        getTestStatus()
-        setParams();
-        loadRequestData('/api/v1/backend_performance/charts/requests/summary', "Response time, ms");
-        fillErrorTable();
-        fillSummaryTable();
-        const perfomanceTimePicker = noUiSlider.create($("#vuh-perfomance-time-picker")[0], {
-            range: {
-                'min': 0,
-                'max': 100
-            },
-            start: [low_value, high_value],
-            connect: true,
-            format: wNumb({
-                decimals: 0
-            }),
-        })
-        perfomanceTimePicker.on('set', function(values) {
-            low_value = values[0]
-            high_value = values[1]
-            resizeChart();
-        });
-    });
-</script>
-
-
 <script src="{{ url_for('backend_performance.static', filename='js/results.js') }}"></script>
 {{ template_slot('params_table_scripts') | safe }}
 {{ template_slot('sources_scripts') | safe }}
 {{ template_slot('locations_scripts') | safe }}
 {{ template_slot('integrations_backend_performance_scripts') | safe }}
 <script src="{{ url_for('backend_performance.static', filename='js/quality_gate.js') }}"></script>
+
+{#<meta property="build_id" content=""/>#}
+{#<meta property="test_id" content=""/>#}
+{#<meta property="lg_type" content=""/>#}
+{#<meta property="test_name" content=""/>#}
+{#<meta property="environment" content=""/>#}
+
+
+{#<script>#}
+{#    const test_data = {#}
+{#        build_id: '{{ test_data['build_id'] | tojson }}',#}
+{#        testId: '{{ test_data['id'] | tojson }}',#}
+{#        lg_type: '{{ test_data['lg_type'] | tojson }}',#}
+{#        test_name: '{{ test_data['name'] | tojson }}',#}
+{#        environment: '{{ test_data['environment'] | tojson }}',#}
+{#        samplerType: $("#sampler").val().toUpperCase();#}
+{#        statusType: $("#status").val().toLowerCase();#}
+{#        aggregator: $("#aggregator").val().toLowerCase();#}
+{#    }#}
+{#</script>#}
+
 <script>
     $(document).on('vue_init', () => {
         const nav_links = $('#source_card_config a')
@@ -73,3 +51,5 @@
         IntegrationSection.Manager().set({{ integrations_data | default({}) | tojson }})
     })
 </script>
+
+

@@ -1,0 +1,71 @@
+<div class="card card-12">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-4">
+                <h3 class="text-gray mb-0">Engine health</h3>
+            </div>
+        </div>
+    </div>
+    <div class="card-body d-flex">
+        <div class="engine_health_card">
+            <div>
+                <Multiselect-Dropdown
+                        @register="register"
+                        placeholder="Select Metrics"
+                        instance_name="load_metric_select"
+                        :list_items='["load1", "load5", "load15"]'
+                        :pre_selected_indexes='[2]'
+                        container_class="d-flex flex-row-reverse metric_select"
+                ></Multiselect-Dropdown>
+                <canvas id="engine_health_load"></canvas>
+                <Engine-Health-Metrics-Legend
+                        @register="register"
+                        instance_name="engine_health_legend_load"
+                        for_chart="load"
+                ></Engine-Health-Metrics-Legend>
+            </div>
+
+            <div>
+                <Multiselect-Dropdown
+                        @register="register"
+                        placeholder="Select Metrics"
+                        instance_name="cpu_metric_select"
+                        :list_items='["system", "user", "softirq", "iowait"]'
+                        :pre_selected_indexes='[1]'
+                        container_class="d-flex flex-row-reverse metric_select"
+                ></Multiselect-Dropdown>
+                <canvas id="engine_health_cpu"></canvas>
+                <Engine-Health-Metrics-Legend
+                        @register="register"
+                        instance_name="engine_health_legend_cpu"
+                        for_chart="cpu"
+                ></Engine-Health-Metrics-Legend>
+            </div>
+
+            <div>
+                <Multiselect-Dropdown
+                        @register="register"
+                        placeholder="Select Metrics"
+                        instance_name="memory_metric_select"
+                        :list_items='["heap memory", "non-heap memory"]'
+                        :pre_selected_indexes='[0]'
+                        container_class="d-flex flex-row-reverse metric_select"
+                ></Multiselect-Dropdown>
+                <canvas id="engine_health_memory"></canvas>
+                <Engine-Health-Metrics-Legend
+                        @register="register"
+                        instance_name="engine_health_legend_memory"
+                        for_chart="memory"
+                ></Engine-Health-Metrics-Legend>
+            </div>
+
+        </div>
+        <div class="card mx-3" style="width: 280px;">
+            <Engine-Health-Legend
+                    @register="register"
+                    instance_name="engine_health_chart_legend"
+            >
+            </Engine-Health-Legend>
+        </div>
+    </div>
+</div>

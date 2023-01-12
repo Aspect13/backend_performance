@@ -1,364 +1,248 @@
-<meta property="build_id" content="{{ test_data['build_id'] }}"/>
-<meta property="test_id" content="{{ test_data['id'] }}"/>
-<meta property="lg_type" content="{{ test_data['lg_type'] }}"/>
-<meta property="test_name" content="{{ test_data['name'] }}"/>
-<meta property="environment" content="{{ test_data['environment'] }}"/>
-
-<!--<div class="container" id="test_results">-->
-<div class="card card-12 pb-4">
-    <div class="card-header">
-        <div class="row">
-            <div class="col-4">
-                <h3><a id="back-button" href="/-/performance/backend"><i
-                        class="fas fa-arrow-left"></i></a> {{test_data["name"] }} (back)</h3>
-            </div>
-            <div class="col-8">
-                <div class="d-flex justify-content-end">
-                    {% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed',
+    <div class="card card-12 pb-4">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-4">
+                    <h3 class="text-gray">
+                        <a id="back-button" href="/-/performance/backend">
+                            <i class="icon__16x16 icon-arrow-left-bold__16"></i>
+                        </a> {{ test_data["name"] }} (back)
+                    </h3>
+                </div>
+                <div class="col-8">
+                    <div class="d-flex justify-content-end">
+                        {% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed',
                     'success'] %}
-                    <button type="button" class="btn btn-secondary" onclick="reRunTest()"
-                            data-toggle="tooltip" data-placement="top" title="Rerun Test"><i class="fas fa-play"></i>
-                    </button>
-                    <button hidden type="button" class="btn btn-secondary mx-2" onclick="downloadReport()"
-                            data-toggle="tooltip" data-placement="top" title="Download report"><i
-                            class="fas fa-file-download"></i></button>
-                    <button class="btn btn-secondary mx-2" id="set_baseline" onclick="setBaseline()"
-                            data-toggle="tooltip" data-placement="top" title="Set current report as baseline">
-                        Set as baseline
-                    </button>
-                    {% endif %}
-                    <button hidden class="btn btn-secondary mx-2" id="not_worse_than" onclick="setThresholds()"
-                            data-toggle="tooltip" data-placement="top" title="Set current report as thresholds">
-                        Set as threshold
-                    </button>
-                    <button class="btn btn-secondary" id="show_config_btn"
-                            data-toggle="modal"
-                            data-target="#config_modal"
-                            data-toggle="tooltip" data-placement="top" title="Show config for current test run">
-                        Show config
-                    </button>
-                    {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed',
+                            <button type="button" class="btn btn-secondary" onclick="reRunTest()"
+                                    data-toggle="tooltip" data-placement="top" title="Rerun Test"><i
+                                    class="fas fa-play"></i>
+                            </button>
+                            <button hidden type="button" class="btn btn-secondary mx-2" onclick="downloadReport()"
+                                    data-toggle="tooltip" data-placement="top" title="Download report"><i
+                                    class="fas fa-file-download"></i></button>
+                            <button class="btn btn-secondary mx-2" id="set_baseline" onclick="setBaseline()"
+                                    data-toggle="tooltip" data-placement="top" title="Set current report as baseline">
+                                Set as baseline
+                            </button>
+                        {% endif %}
+                        <button hidden class="btn btn-secondary mx-2" id="not_worse_than" onclick="setThresholds()"
+                                data-toggle="tooltip" data-placement="top" title="Set current report as thresholds">
+                            Set as threshold
+                        </button>
+                        <button class="btn btn-secondary" id="show_config_btn"
+                                data-toggle="modal"
+                                data-target="#config_modal"
+                                data-toggle="tooltip" data-placement="top" title="Show config for current test run">
+                            Show config
+                        </button>
+                        {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed',
                     'success'] %}
-                    <button class="btn btn-danger mx-2" id="stop-test" onclick="stopTest()">
-                        Stop test
-                    </button>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="card-body" id="progressbar-body">
-        {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed', 'success'] %}
-        <performancetestprogress
-                :test_status='{{ test_data.test_status | tojson }}'
-                :project_id="{{ test_data.project_id }}"
-                :test_id="{{ test_data.id }}"
-        ></performancetestprogress>
-        {% endif %}
-    </div>
-    <div class="card-body" id="backend-small-cards">
-        <div class="row">
-            <div class="col">
-                <div class="card card-sm card-blue">
-                    <div class="card-header">{{ test_data["vusers"] }} VU</div>
-                    <div class="card-body">MAX VUSERS</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card card-sm card-blue">
-                    <div class="card-header">{{ test_data["throughput"] }} req/sec</div>
-                    <div class="card-body">AVG.THROUGHPUT</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card card-sm card-blue">
-                    <div class="card-header">{{ test_data["failure_rate"] }} %</div>
-                    <div class="card-body">ERROR RATE</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card card-sm card-blue">
-                    <div class="card-header">{{ test_data["pct95"] }} ms</div>
-                    <div class="card-body">95 PCT. RESP. TIME</div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card card-sm card-blue">
-                    <div class="card-header">{{ test_data["pct50"] }} ms</div>
-                    <div class="card-body">MEDIAN RESP. TIME</div>
-                </div>
-            </div>
-        </div>
-        <div class="row" id="processing-table">
-            <div class="col">
-                <div class="card card-sm-table">
-                    <div class="card-body">
-                        <table>
-                            <tr>
-                                <td class="text-gray-500">Status</td>
-                                <td>{{ test_data['test_status']['status'] }}</td>
-                                <td class="text-gray-500">STARTED</td>
-                                <td id="start_time">{{ test_data["start_time"] }}</td>
-                                <td class="text-gray-500">TEST TYPE</td>
-                                <td>{{ test_data["type"] }}</td>
-                                <td class="text-gray-500">RESPONSE CODES</td>
-                                <td>1xx: {{ test_data["onexx"] }} 2xx: {{ test_data["twoxx"] }} 3xx:
-                                    {{ test_data["threexx"] }} 4xx: {{ test_data["fourxx"] }} 5xx:
-                                    {{ test_data["fivexx"] }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="text-gray-500">DURATION</td>
-                                <td>{{ test_data["duration"] }}</td>
-                                <td class="text-gray-500">ENDED</td>
-                                <td id="end_time">{{ test_data["end_time"] }}</td>
-                                <td class="text-gray-500">Environment</td>
-                                <td>{{ test_data["environment"] }}</td>
-                                <td class="text-gray-500">tags</td>
-                                <td>
-                                    {% for tag in test_data["tags"] %}
-                                    <span class="badge badge-primary">{{ tag }}</span>
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        </table>
+                            <button class="btn btn-danger mx-2" id="stop-test" onclick="stopTest()">
+                                Stop test
+                            </button>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
-        <div hidden class="row">
-            <div class="col-12 d-flex align-items-center mt-4" id="dropdowns">
-                <p class="mb-0 font-h6 text-gray-500 font-semibold">LOAD CONFIG</p>
-                <multiselect-filter :title="'Carrier default'">
-                </multiselect-filter>
-                <multiselect-filter :title="'Custom location'">
-                </multiselect-filter>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="card card-12 p-28 mt-3">
-    <div class="d-flex justify-content-between pb-4">
-        <h1 class="font-h2">Requests summary</h1>
-        <div class="d-flex align-items-center">
-
+        <div class="card-body" id="progressbar-body">
             {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed', 'success'] %}
-            <div class="complex-list">
-                <select class="selectpicker dropdown-menu__simple" data-style="btn"
-                        id="auto_update"
-                        onchange="auto_update()">
-                    <option value="60000">1 min</option>
-                    <option value="180000">3 min</option>
-                    <option value="300000">5 min</option>
-                    <option value="600000">10 min</option>
-                    <option value="1800000">30 min</option>
-                    <option value="0" selected>off</option>
-                </select>
-            </div>
+                <performancetestprogress
+                        :test_status='{{ test_data.test_status | tojson }}'
+                        :project_id="{{ test_data.project_id }}"
+                        :test_id="{{ test_data.id }}"
+                ></performancetestprogress>
             {% endif %}
-            <div class="complex-list">
-                <select class="selectpicker dropdown-menu__simple" data-style="btn"
-                        id="aggregator"
-                        onchange="switchAggregator()">
-                    <option>auto</option>
-                    <option>1s</option>
-                    <option>5s</option>
-                    <option>30s</option>
-                    <option>1m</option>
-                    <option>5m</option>
-                    <option>10m</option>
-                </select>
-            </div>
-            <div class="complex-list">
-                <select class="selectpicker dropdown-menu__simple" data-style="btn"
-                    id="status"
-                    onchange="switchStatus()">
-                    <option>all</option>
-                    <option>ok</option>
-                    <option>ko</option>
-                </select>
-            </div>
-            <div class="complex-list">
-                <select class="selectpicker dropdown-menu__simple" data-style="btn"
-                        id="sampler"
-                        onchange="switchSampler()">
-                    <option>REQUEST</option>
-                    <option>TRANSACTION</option>
-                </select>
-            </div>
-
-            <ul class="custom-tabs nav nav-pills mr-3" id="pills-tab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <a id="RT" class="font-h5 font-uppercase active"
-                    onclick="loadRequestData('/api/v1/backend_performance/charts/requests/summary', 'Response time, ms')"
-                    data-toggle="pill">Responses</a>
-                </li>
-                <li class="nav-item active" role="presentation">
-                    <a id="AR" class="font-h5 font-uppercase"
-                   onclick="loadRequestData('/api/v1/backend_performance/charts/requests/average', 'Response time, ms')"
-                   data-toggle="pill">Average Response</a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a id="HT" class="font-h5 font-uppercase"
-                    onclick="loadRequestData('/api/v1/backend_performance/charts/requests/hits', 'Hits/Requests per second')"
-                    data-toggle="pill">TPS</a>
-                </li>
-                <li class="nav-item" role="presentation" id="analytic-tab" disable>
-                    <a id="AN" class="font-h5 font-uppercase"
-                        style="position: relative; padding-right: 20px"
-                        onclick="handleAnalytic(event)"
-                        data-toggle="pill">Analytics
-                        <i id="analytic-loader" class="spinner-loader" style="position: absolute; top: 8px; right: 0"></i>
-                    </a>
-                </li>
-            </ul>
-            <button id="DW" onclick="downloadPic()" class="btn btn-secondary btn-icon mr-2"><i
-                    class="fas fa-download"></i></button>
         </div>
-    </div>
-    <div class="position-relative">
-        <div id="preset">
-            <div class="d-flex mt-3">
-                <div class="chart flex-grow-1">
-                    <canvas id="chart-requests"
-                        style="display: block; height: 450px; width: 100%;"></canvas>
-                </div>
-                <div class="card" style="width:280px; height: 500px; margin-left: 28px">
-                    <div class="d-flex flex-column p-3">
-                        <label
-                                class="mb-0 w-100 d-flex align-items-center custom-checkbox custom-checkbox__multicolor"
-                                for="all_checkbox">
-                            <input
-                                    class="mx-2 custom__checkbox"
-                                    checked="true" id="all_checkbox" onclick="selectOrUnselectRequests()"
-                                    style="--cbx-color: var(--basic);"
-                                    type="checkbox">
-                            <span class="w-100 d-inline-block">Select/Unselect all</span>
-                        </label>
+        <div class="card-body" id="backend-small-cards">
+            <div class="row">
+                <div class="col">
+                    <div class="card card-sm card-blue">
+                        <div class="card-header">{{ test_data["vusers"] }} VU</div>
+                        <div class="card-body">MAX VUSERS</div>
                     </div>
-                    <hr class="my-0">
-                    <div id="chartjs-custom-legend"
-                         class="custom-chart-legend d-flex flex-column px-3 py-3"
-                         style="height: 400px; overflow: scroll;"
-                    ></div>
                 </div>
-            </div>
-        </div>
-        <div id="analytics" class="hidden">
-            <div class="d-flex mt-3">
-                <div class="chart flex-grow-1">
-                    <canvas id="chart-analytics"
-                        style="display: block; height: 450px; width: 100%;"></canvas>
+                <div class="col">
+                    <div class="card card-sm card-blue">
+                        <div class="card-header">{{ test_data["throughput"] }} req/sec</div>
+                        <div class="card-body">AVG.THROUGHPUT</div>
+                    </div>
                 </div>
-                <analytic-filter
-                        :analytics-data='{{ analytics_control | tojson }}'
-                        @register="register"
-                        instance_name="analytic-filter">
-                </analytic-filter>
-            </div>
-        </div>
-        <div class="row pl-2 pb-4 w-100">
-            <div class="col">
-                <label class="w-100 mb-0 font-h5 font-semibold">
-                    Time picker
-                </label>
-                <div style="width: calc(100% - 290px);">
-                    <div class="slider-holder">
-                        <div id="vuh-perfomance-time-picker"></div>
+                <div class="col">
+                    <div class="card card-sm card-blue">
+                        <div class="card-header">{{ test_data["failure_rate"] }} %</div>
+                        <div class="card-body">ERROR RATE</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-sm card-blue">
+                        <div class="card-header">{{ test_data["pct95"] }} ms</div>
+                        <div class="card-body">95 PCT. RESP. TIME</div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card card-sm card-blue">
+                        <div class="card-header">{{ test_data["pct50"] }} ms</div>
+                        <div class="card-body">MEDIAN RESP. TIME</div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div id="chartjs-custom-legend-analytic" class="d-grid grid-column-7"></div>
-    </div>
-</div>
-
-{% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed', 'success'] %}
-<div class="card card-12 pb-4 card-table">
-    <div class="card-header">
-        <div class="row">
-            <div class="col-4">
-                <h3 class="text-gray mb-0">Summary</h3>
+            <div class="row" id="processing-table">
+                <div class="col">
+                    <div class="card card-sm-table">
+                        <div class="card-body d-flex justify-content-between">
+                            <table class="table-card-result">
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">Status</td>
+                                    <td class="font-h5">{{ test_data['test_status']['status'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">DURATION</td>
+                                    <td class="font-h5">{{ test_data["duration"] }}</td>
+                                </tr>
+                            </table>
+                            <table>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">STARTED</td>
+                                    <td class="font-h5" id="start_time">{{ test_data["start_time"] }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">ENDED</td>
+                                    <td class="font-h5" id="end_time">{{ test_data["end_time"] }}</td>
+                                </tr>
+                            </table>
+                            <table>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">TEST TYPE</td>
+                                    <td class="font-h5">{{ test_data["type"] }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">Environment</td>
+                                    <td class="font-h5">{{ test_data["environment"] }}</td>
+                                </tr>
+                            </table>
+                            <table>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">RESPONSE CODES</td>
+                                    <td>
+                                        1xx: <span class="compact-format">{{ test_data["onexx"] }}</span>
+                                        2xx: <span class="compact-format">{{ test_data["twoxx"] }}</span>
+                                        3xx: <span class="compact-format">{{ test_data["threexx"] }}</span>
+                                        4xx: <span class="compact-format">{{ test_data["fourxx"] }}</span>
+                                        5xx: <span class="compact-format">{{ test_data["fivexx"] }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="text-gray-500 font-h6 font-semibold">tags</td>
+                                    <td>
+                                        {% for tag in test_data["tags"] %}
+                                            <span class="badge badge-primary">{{ tag }}</span>
+                                        {% endfor %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div hidden class="row">
+                <div class="col-12 d-flex align-items-center mt-4" id="dropdowns">
+                    <p class="mb-0 font-h6 text-gray-500 font-semibold">LOAD CONFIG</p>
+                    <multiselect-filter :title="'Carrier default'">
+                    </multiselect-filter>
+                    <multiselect-filter :title="'Custom location'">
+                    </multiselect-filter>
+                </div>
             </div>
         </div>
     </div>
-    <div class="card-body">
-        <table class="table table-border"
-               id="summary_table"
-               data-toggle="table"
-               data-page-size=10
-               data-pagination="true"
-               data-pagination-parts='["pageInfoShort", "pageList"]'>
-            <thead class="thead-light">
-            <tr>
-                <th scope="col" data-sortable="true" data-field="request_name">Name</th>
-                <th scope="col" data-sortable="true" data-field="total">Ttl req, count</th>
-                <th scope="col" data-sortable="true" data-field="throughput">Thrghpt, req/sec</th>
-                <th scope="col" data-sortable="true" data-field="ko">Errors, count</th>
-                <th scope="col" data-sortable="true" data-field="min">Min, ms</th>
-                <th scope="col" data-sortable="true" data-field="mean">Median, ms</th>
-                <th scope="col" data-sortable="true" data-field="pct95">Pct95, ms</th>
-                <th scope="col" data-sortable="true" data-field="max">Max, ms</th>
-            </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-    </div>
-</div>
-{% endif %}
 
-<div class="card card-12 pb-4 card-table">
-    <div class="card-header">
-        <div class="row">
-            <div class="col-4">
-                <h3 class="text-gray mb-0">Errors</h3>
+
+    {% with test_data=test_data %}
+        {% include 'backend_performance:results/summary.html' %}
+    {% endwith %}
+
+    {% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed', 'success'] %}
+        <div class="card card-12 pb-4 card-table">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-4">
+                        <h3 class="text-gray mb-0">Summary</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table class="table table-border"
+                       id="summary_table"
+                       data-toggle="table"
+                       data-page-size=10
+                       data-pagination="true"
+                       data-pagination-parts='["pageInfoShort", "pageList"]'>
+                    <thead class="thead-light">
+                    <tr>
+                        <th scope="col" data-sortable="true" data-field="request_name">Name</th>
+                        <th scope="col" data-sortable="true" data-field="total">Ttl req, count</th>
+                        <th scope="col" data-sortable="true" data-field="throughput">Thrghpt, req/sec</th>
+                        <th scope="col" data-sortable="true" data-field="ko">Errors, count</th>
+                        <th scope="col" data-sortable="true" data-field="min">Min, ms</th>
+                        <th scope="col" data-sortable="true" data-field="mean">Median, ms</th>
+                        <th scope="col" data-sortable="true" data-field="pct95">Pct95, ms</th>
+                        <th scope="col" data-sortable="true" data-field="max">Max, ms</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
         </div>
+    {% endif %}
+
+    <div class="card card-12 pb-4 card-table">
+        <div class="card-header">
+            <div class="row">
+                <div class="col-4">
+                    <h3 class="text-gray mb-0">Errors</h3>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-border"
+                   id="errors"
+                   data-toggle="table"
+                   data-url=""
+                   data-page-size=10
+                   data-pagination="true"
+                   data-pagination-parts='["pageInfoShort", "pageList"]'
+                   data-detail-view="true"
+                   data-detail-view-icon="false"
+                   data-detail-view-by-click="true"
+                   data-detail-formatter="errors_detail_formatter">
+                <thead class="thead-light">
+                <tr>
+                    <th data-sortable="true" data-field="Request name">Request name</th>
+                    <th data-sortable="true" data-field="URL">URL</th>
+                    <th data-sortable="true" data-field="Response code">Response Code</th>
+                    <th data-sortable="true" data-field="Error message">Error Message</th>
+                    <th data-sortable="true" data-field="count">Count</th>
+                </tr>
+                </thead>
+            </table>
+        </div>
     </div>
-    <div class="card-body">
-        <table class="table table-border"
-               id="errors"
-               data-toggle="table"
-               data-url=""
-               data-page-size=10
-               data-pagination="true"
-               data-pagination-parts='["pageInfoShort", "pageList"]'
-               data-detail-view="true"
-               data-detail-view-icon="false"
-               data-detail-view-by-click="true"
-               data-detail-formatter="detailFormatter">
-            <thead class="thead-light">
-            <tr>
-                <th data-sortable="true" data-field="Request name">Request name</th>
-                <th data-sortable="true" data-field="URL">URL</th>
-                <th data-sortable="true" data-field="Response code">Response Code</th>
-                <th data-sortable="true" data-field="Error message">Error Message</th>
-                <th data-sortable="true" data-field="count">Count</th>
-            </tr>
-            </thead>
-        </table>
-    </div>
-</div>
-{% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed', 'success'] %}
-{% with result_id=test_data.id %}
-{% include 'backend_performance:results/artifacts_table.html' %}
-{% endwith %}
 
-{% else %}
+    {% include 'backend_performance:results/engine_health.html' %}
 
-<performancelogsapp
-        :project_id="{{ test_data.project_id }}"
-        :report_id="{{ test_data.id }}"
-        instance_name="perf_logs"
-        @register="register"
-></performancelogsapp>
-
-{% endif %}
-
-
-<!--</div>-->
-{% with test_config = test_data['test_config'] %}
-    {% include 'backend_performance:results/config_modal.html' %}
-{% endwith %}
+    {% if test_data['test_status']['status'].lower() in ['finished', 'error', 'failed', 'success'] %}
+        {% with result_id=test_data.id %}
+            {% include 'backend_performance:results/artifacts_table.html' %}
+        {% endwith %}
+    {% else %}
+        <performancelogsapp
+                :project_id="{{ test_data.project_id }}"
+                :report_id="{{ test_data.id }}"
+                instance_name="perf_logs"
+                @register="register"
+        ></performancelogsapp>
+    {% endif %}
+    {% with test_config = test_data['test_config'] %}
+        {% include 'backend_performance:results/config_modal.html' %}
+    {% endwith %}

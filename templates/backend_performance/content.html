@@ -16,18 +16,15 @@
             >
                 <template #actions="{master}">
                     <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-32 btn-secondary" data-toggle="modal"
+                        <button type="button" class="btn btn-secondary btn-icon btn-icon__purple mr-2" data-toggle="modal"
                                 data-target="#{{ modal_id }}">
-                            <i class="fas fa-plus"></i>
+                            <i class="icon__18x18 icon-create-element"></i>
                         </button>
-                        <button type="button" class="btn btn-32 btn-secondary" @click="master.table_action('refresh')">
+                        <button type="button" class="btn btn-secondary btn-icon btn-icon__purple mr-2" @click="master.table_action('refresh')">
                             <i class="fas fa-sync"></i>
                         </button>
-                        <button type="button" class="btn btn-32 btn-secondary"><i
-                                class="fas fa-filter"></i></button>
-                        <button type="button" class="btn btn-32 btn-secondary"><i class="fas fa-tag"></i></button>
-                        <button type="button" class="btn btn-32 btn-secondary" id="delete_tests"><i
-                                class="fas fa-trash-alt"></i>
+                        <button type="button" class="btn btn-secondary btn-icon btn-icon__purple" id="delete_tests"><i
+                                class="icon__18x18 icon-delete"></i>
                         </button>
                     </div>
                 </template>
@@ -85,13 +82,11 @@
     >
         <template #actions="{master}">
             <div class="d-flex justify-content-end">
-                <button type="button" class="btn btn-32 btn-secondary" @click="master.table_action('refresh')">
+                <button type="button" class="btn btn-secondary btn-icon btn-icon__purple mr-2" @click="master.table_action('refresh')">
                     <i class="fas fa-sync"></i>
                 </button>
-                <button type="button" class="btn btn-32 btn-secondary"><i class="fas fa-filter"></i></button>
-                <button type="button" class="btn btn-32 btn-secondary"><i class="fas fa-tag"></i></button>
-                <button type="button" class="btn btn-32 btn-secondary" id="delete_results">
-                    <i class="fas fa-trash-alt"></i>
+                <button type="button" class="btn btn-secondary btn-icon btn-icon__purple" id="delete_results">
+                    <i class="icon__18x18 icon-delete"></i>
                 </button>
             </div>
         </template>

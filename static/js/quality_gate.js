@@ -1,48 +1,78 @@
 const QualityGate = {
     delimiters: ['[[', ']]'],
-    props: ['active', 'failed_thresholds_rate', 'error'],
-    emits: ['update:active', 'update:failed_thresholds_rate'],
+    props: ['instance_name', 'section', 'selected_integration', 'is_selected'],
+    emits: ['set_data', 'clear_data'],
+    delimiters: ['[[', ']]'],
+    data() {
+        return this.initialState()
+    },
+    methods: {
+        get_data() {
+            if (this.is_selected) {
+                const {error_rate, degradation_rate, missed_thresholds} = this
+                return {error_rate, degradation_rate, missed_thresholds}
+            }
+        },
+        set_data(data) {
+            console.log('set_data', data)
+            const {id, ...rest} = data
+            this.load(rest)
+            this.$emit('set_data', {id: 'quality_gate'})
+        },
+        clear_data() {
+            Object.assign(this.$data, this.initialState())
+            this.$emit('clear_data')
+        },
+        load(data) {
+            Object.assign(this.$data, {...this.initialState(), ...data})
+        },
+        set_error(data) {
+            this.errors[data.loc[data.loc.length - 1]] = data.msg
+        },
+        clear_errors() {
+            this.errors = {}
+        },
+        initialState: () => ({
+            error_rate: 10,
+            degradation_rate: 20,
+            missed_thresholds : 50,
+            errors: {},
+        })
+    },
     template: `
-    <div class="card card-x card-row-1">
-        <div class="card-header">
-            <div class="d-flex">
-                <h9 class="flex-grow-1">
-                    QualityGate
-                </h9>
-                <label class="custom-toggle">
-                    <input type="checkbox"
-                        :checked="active"
-                        @change="$emit('update:active', $event.target.checked)"
-                    />
-                    <span class="custom-toggle_slider round"></span>
-                </label>
+    <div class="row">
+        <div class="d-flex" 
+            ref="settings"
+        >
+            <div class="col-4 pl-0">
+                <h9>Error rate, %</h9>
+                <input type="number" class="form-control" placeholder="Error rate"
+                    v-model="error_rate"
+                    :class="{ 'is-invalid': errors.error_rate }"
+                >
+                <div class="invalid-feedback">[[ errors.error_rate ]]</div>
+            </div>
+            
+            <div class="col-4 pl-0">
+                <h9>Degradation rate, %</h9>
+                <input type="number" class="form-control" placeholder="Degradation rate"
+                    v-model="degradation_rate"
+                    :class="{ 'is-invalid': errors.degradation_rate }"
+                >
+                <div class="invalid-feedback">[[ errors.degradation_rate ]]</div>
+            </div>
+            
+            <div class="col-4 pl-0">
+                <h9>Missed thresholds, %</h9>
+                <input type="number" class="form-control" placeholder="Missed thresholds"
+                    v-model="missed_thresholds"
+                    :class="{ 'is-invalid': errors.missed_thresholds }"
+                >
+                <div class="invalid-feedback">[[ errors.missed_thresholds ]]</div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-12 mb-3 pl-0 collapse" 
-                ref="settings"
-            >
-                <label class="col-12 p-0">
-                    <h9>Failed thresholds rate. If the failed thresholds rate in the test is higher than this number, the test will be considered as failed</h9>
-                    <input type="number" class="form-control" placeholder="Failed thresholds rate"
-                        :value="failed_thresholds_rate"
-                        @change="$emit('update:failed_thresholds_rate', $event.target.value)"
-                        :class="{ 'is-invalid': !!error }"
-                    >
-                   <div class="invalid-feedback">[[ error?.msg ]]</div>
-                </label>
-            </div>
-       </div>
     </div>
     `,
-    watch: {
-        active(newValue) {
-            $(this.$refs.settings).collapse(!newValue ? 'hide' : 'show')
-        }
-    },
-    mounted() {
-        this.$props.active && $(this.$refs.settings).collapse('show')
-    }
 }
 
-register_component('QualityGate', QualityGate)
+register_component('quality-gate', QualityGate)

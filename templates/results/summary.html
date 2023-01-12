@@ -1,0 +1,173 @@
+<Summary-Controller
+        @register="register"
+        instance_name="summary"
+        :initial_samplers='{{ test_data['samplers'] | tojson }}'
+        :start_time='{{ test_data['start_time'] | tojson }}'
+        :end_time='{{ test_data['end_time'] | tojson }}'
+        :test_name='{{ test_data['name'] | tojson }}'
+        :initial_status_percentage='{{ test_data['test_status'].get('percentage', 0) | tojson }}'
+        :lg_type='{{ test_data['lg_type'] | tojson }}'
+        :build_id='{{ test_data['build_id'] | tojson }}'
+>
+    <template #default="{master}">
+{#    <Chart-Legend#}
+{#        @register="register"#}
+{#        instance_name="legendary_test"#}
+{#    ></Chart-Legend>#}
+
+{#        <br/>#}
+{#        <br/>#}
+{#        master: [[ master ]]#}
+{#        <br/>#}
+{#        <br/>#}
+
+        <div class="card card-12 p-28 mt-3" id="under-summary-controller">
+            <div class="d-flex justify-content-between pb-4">
+                <div class="d-flex align-items-center">
+                    <h3 class="text-gray mr-4">Requests summary</h3>
+
+                    {% if test_data['test_status']['status'].lower() not in ['finished', 'error', 'failed', 'success'] %}
+                        <div class="selectpicker-titled">
+                            <span class="font-h6 font-semibold px-3 item__left">AUTOAPDATE</span>
+                            <select class="selectpicker" data-style="item__right"
+                                    :value="master.update_interval"
+                                    @change="master.handle_change_update_interval"
+                            >
+                                <option value="60000">1 min</option>
+                                <option value="180000">3 min</option>
+                                <option value="300000">5 min</option>
+                                <option value="600000">10 min</option>
+                                <option value="1800000">30 min</option>
+                                <option value="0" selected>off</option>
+                            </select>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="complex-list">
+                        <select class="selectpicker dropdown-menu__simple" data-style="btn"
+                                :value="master.aggregator"
+                                @change="master.handle_aggregator_change"
+                        >
+                            <option>auto</option>
+                            <option>1s</option>
+                            <option>5s</option>
+                            <option>30s</option>
+                            <option>1m</option>
+                            <option>5m</option>
+                            <option>10m</option>
+                        </select>
+                    </div>
+                    <div class="complex-list">
+                        <select class="selectpicker dropdown-menu__simple" data-style="btn"
+                                :value="master.status_type"
+                                @change="master.handle_status_change"
+                        >
+                            <option value="all">All</option>
+                            <option value="ok">Ok</option>
+                            <option value="ko">Ko</option>
+                        </select>
+                    </div>
+                    <div class="complex-list">
+                        <select class="selectpicker dropdown-menu__simple" data-style="btn"
+                                :value="master.sampler_type"
+                                @change="master.handle_sampler_change"
+                        >
+                            {#                    <option>REQUEST</option>#}
+                            {#                    <option>TRANSACTION</option>#}
+                            <option v-for="i in master.samplers" :key="i" :value="i">[[ i ]]</option>
+                        </select>
+                    </div>
+
+                    <ul class="custom-tabs nav nav-pills mr-3" id="pills-tab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a id="RT" class="font-h5 font-uppercase active"
+                               @click="master.handle_tab_change"
+                               data-toggle="pill">Responses</a>
+                        </li>
+                        <li class="nav-item active" role="presentation">
+                            <a id="AR" class="font-h5 font-uppercase"
+                               @click="master.handle_tab_change"
+                               data-toggle="pill">Average Response</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a id="HT" class="font-h5 font-uppercase"
+                               @click="master.handle_tab_change"
+                               data-toggle="pill">TPS</a>
+                        </li>
+                        <li class="nav-item" role="presentation" id="analytic-tab">
+                            <a id="AN" class="font-h5 font-uppercase"
+                               v-if="master.status_percentage === 100"
+                               @click="master.handle_tab_change"
+                               data-toggle="pill">Analytics
+                            </a>
+                            <a v-else
+                               style="position: relative; padding-right: 20px"
+                               class="font-h5 font-uppercase text-disabled">
+                                Analytics
+                                <i id="analytic-loader" class="spinner-loader"
+                                   style="position: absolute; top: 8px; right: 0"></i>
+                            </a>
+                        </li>
+
+                    </ul>
+                    <button
+                            @click="master.handle_download"
+                            class="btn btn-secondary btn-icon mr-2"
+                    >
+                        <i class="fas fa-download"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="position-relative">
+
+                <div id="preset">
+                    <div class="d-flex mt-3">
+                        <div class="chart flex-grow-1 chart-container">
+                            <div id="chart-loader"
+                                 class="layout-spinner">
+                                <i class="spinner-loader__32x32 spinner-centered"></i>
+                            </div>
+                            <canvas id="chart-requests" height="100%"></canvas>
+                        </div>
+                        <div class="card" style="width:280px; margin-left: 28px">
+                            <Chart-Legend
+                                @register="register"
+                                instance_name="requests_chart_legend"
+                                :chart_object_name="master.current_chart"
+                                item_container_classes="custom-chart-legend"
+                            ></Chart-Legend>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="analytics" class="hidden">
+                    <div class="d-flex mt-3">
+                        <div class="chart flex-grow-1 chart-container">
+                            <canvas id="chart-analytics" height="100%"></canvas>
+                        </div>
+                        <analytic-filter
+                                :analytics-data='{{ analytics_control | tojson }}'
+                                @register="register"
+                        >
+                        </analytic-filter>
+                    </div>
+                </div>
+                <div class="row pl-2 pb-4 w-100">
+                    <div class="col">
+                        <label class="w-100 mb-0 font-h5 font-semibold">
+                            Time picker
+                        </label>
+                        <div style="width: calc(100% - 290px);">
+                            <div class="slider-holder">
+                                <div id="vuh-performance-time-picker"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="chartjs-custom-legend-analytic" class="d-grid grid-column-7">
+                </div>
+            </div>
+        </div>
+    </template>
+</Summary-Controller>

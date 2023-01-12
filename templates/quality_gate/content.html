@@ -1,0 +1,23 @@
+{% set instance_name_prefix = instance_name_prefix | default('') %}
+{% set integration_name = 'quality_gate' %}
+{% set display_name = 'QualityGate' %}
+
+<Test-Integration-Item
+    integration_name="{{ '%s%s' | format(instance_name_prefix, integration_name) }}"
+    display_name="{{ display_name }}"
+    :project_integrations="[{description: 'QualityGate', id: 'quality_gate', is_default: true}]"
+>
+    <template #selector="{selected_integration, is_selected, on_set_data, on_clear_data}">
+        <quality-gate
+            @register="register"
+            instance_name="{{ '%s%s' | format(instance_name_prefix, integration_name) }}"
+            section="processing"
+
+            @set_data="on_set_data"
+            @clear_data="on_clear_data"
+
+            :selected_integration="selected_integration"
+            :is_selected="is_selected"
+        ></quality-gate>
+    </template>
+</Test-Integration-Item>

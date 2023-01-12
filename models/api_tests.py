@@ -160,17 +160,16 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
 
     def configure_execution_json(self, execution: bool = False) -> dict:
         exec_params = ExecutionParams.from_orm(self).dict(exclude_none=True)
-
         mark_for_delete = defaultdict(list)
         for section, integration in self.integrations.items():
             for integration_name, integration_data in integration.items():
                 try:
-                    extended_data = self.rpc.call_function_with_timeout(
+                    # we never commit, so this is fine
+                    integration[integration_name] = self.rpc.call_function_with_timeout(
                         func=f'backend_performance_execution_json_config_{integration_name}',
                         timeout=3,
-                        integration_id=integration_data.get('id'),
+                        integration_data=integration_data,
                     )
-                    integration_data.update(extended_data)
                 except Empty:
                     log.error(f'Cannot find execution json compiler for {integration_name}')
                     mark_for_delete[section].append(integration_name)
@@ -187,6 +186,9 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
         for section in mark_for_delete.keys():
             if not self.integrations[section]:
                 self.integrations.pop(section)
+        location = self.location
+        self.location = "__internal" if self.location.startswith(
+            "kubernetes") else self.location
 
         execution_json = {
             'test_id': self.test_uid,
@@ -200,7 +202,7 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
             **self.rpc.call.parse_source(self.source).execution_json,
             'integrations': self.integrations
         }
-
+        self.location = location
         if execution:
             execution_json = secrets_tools.unsecret(execution_json, project_id=self.project_id)
 

@@ -11,3 +11,11 @@ class APIBaseline(db_tools.AbstractBaseMixin, db.Base):
     test = Column(String, unique=False, nullable=False)
     environment = Column(String, unique=False, nullable=False)
     summary = Column(ARRAY(JSON), unique=False, nullable=False)
+
+    def insert(self):
+        APIBaseline.query.filter(
+            APIBaseline.project_id == self.project_id,
+            APIBaseline.test == self.test,
+            APIBaseline.environment == self.environment
+        ).delete()
+        super().insert()

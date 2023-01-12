@@ -1,1 +1,4 @@
-<!--<link type="text/css" href="{{ url_for('design-system.static', filename='assets/style/css/chart.css') }}" rel="stylesheet">-->
+{{ template_slot('params_table_styles') | safe }}
+{{ template_slot('locations_styles') | safe }}
+{{ template_slot('integrations_backend_performance_styles') | safe }}
+<link rel="stylesheet" type="text/css" href="{{ url_for('backend_performance.static', filename='css/results.css') }}" />

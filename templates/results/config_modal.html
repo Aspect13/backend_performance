@@ -118,6 +118,7 @@
                     parallel_runners='{{ test_config['parallel_runners'] }}'
                     cpu='{{ test_config['env_vars']['cpu_quota'] }}'
                     memory='{{ test_config['env_vars']['memory_quota'] }}'
+                    cloud_settings='{{ test_config['env_vars']['cloud_settings'] }}'
                 ></Locations>
 
 
@@ -132,17 +133,6 @@
 
                 {{ template_slot("integrations_backend_performance_content") | safe }}
 
-                {% set quality_gate = test_config['integrations'].get('reporters', {}).get('quality_gate', {}) %}
-                <div class="section">
-                    <div class="row">
-                        <div class="col-6">
-                            <Quality-Gate
-                                failed_thresholds_rate='{{ quality_gate.get('failed_thresholds_rate', 0) }}'
-                                active={{ quality_gate.get('failed_thresholds_rate', False) | tojson }}
-                            ></Quality-Gate>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

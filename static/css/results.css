@@ -1,0 +1,47 @@
+#pills-tab > li {
+    cursor: pointer;
+}
+
+.chart-container {
+    position: relative;
+    min-height: 450px;
+    width: calc(100% - 280px);
+}
+
+.custom-chart-legend {
+    overflow: scroll;
+    max-height: 450px;
+}
+
+.engine_health_card {
+    position: relative;
+    width: calc(100% - 300px);
+}
+
+.engine_health_card canvas {
+    max-height: 250px;
+    width: 100%;
+}
+
+/*.engine_health_card canvas:last-child {*/
+/*    max-height: 320px;*/
+/*}*/
+
+.engine_health_metrics_legend {
+    margin: 0px 15px 10px 65px;
+}
+
+.metric_select {
+    position: relative;
+    top: 25px;
+}
+
+.engine_health_legend_items label {
+    max-width: 100%;
+}
+
+.engine_health_legend_items label > span {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+}

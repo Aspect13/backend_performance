@@ -75,8 +75,8 @@ class RPC:
 
     @web.rpc('backend_performance_execution_json_config_quality_gate')
     @rpc_tools.wrap_exceptions(RuntimeError)
-    def make_execution_json_config(self, integration_id: int) -> dict:
+    def make_execution_json_config(self, integration_data: dict) -> dict:
         """ Prepare execution_json for this integration """
         # no extra data to add to execution json
         # but rpc needs to exist
-        return {}
+        return integration_data

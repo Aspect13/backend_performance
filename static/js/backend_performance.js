@@ -12,22 +12,19 @@ var test_formatters = {
     actions(value, row, index) {
         return `
             <div class="d-flex justify-content-end">
-                <button type="button" class="btn btn-24 btn-action test_run" 
-                        data-toggle="tooltip" data-placement="top" title="Run Test"
-                >
-                    <i class="fas fa-play"></i>
+                <button type="button" class="btn btn-default btn-xs btn-table btn-icon__xs test_run mr-2" 
+                        data-toggle="tooltip" data-placement="top" title="Run Test">
+                    <i class="icon__18x18 icon-run"></i>
                 </button>
                 <div class="dropdown_multilevel">
-                    <button class="btn btn-24 btn-action" type="button"
+                    <button class="btn btn-default btn-xs btn-table btn-icon__xs" type="button"
                             data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="fas fa-ellipsis-v"></i>
+                        <i class="icon__18x18 icon-menu-dots"></i>
                     </button>
                     <ul class="dropdown-menu">
                         <li class="dropdown-menu_item dropdown-item d-flex align-items-center">
-                            <span class="w-100 font-h5"><i class="fas fa-share-alt mr-2"></i>Integrate with</span>
-                            <i class="fa fa-sort-down"
-                               style="transform: rotate(270deg)"
-                            ></i>
+                            <span class="w-100 font-h5 d-flex align-items-center"><i class="icon__18x18 icon-integrate mr-1"></i>Integrate with</span>
+                            <i class="icon__16x16 icon-sort"></i>
                             <ul class="submenu dropdown-menu">
                                 <li class="dropdown-menu_item dropdown-item d-flex align-items-center int_docker">
                                     <span class="w-100 font-h5">Docker command</span>
@@ -35,10 +32,10 @@ var test_formatters = {
                             </ul>
                         </li>
                         <li class="dropdown-menu_item dropdown-item d-flex align-items-center test_edit">
-                            <i class="fas fa-cog mr-2"></i><span class="w-100 font-h5">Settings</span>
+                            <i class="icon__18x18 icon-settings mr-2"></i><span class="w-100 font-h5">Settings</span>
                         </li>
                         <li class="dropdown-menu_item dropdown-item d-flex align-items-center test_delete">
-                            <i class="fas fa-trash-alt mr-2"></i><span class="w-100 font-h5">Delete</span>
+                            <i class="icon__18x18 icon-delete mr-2"></i><span class="w-100 font-h5">Delete</span>
                         </li>
                     </ul>
                 </div>
@@ -261,8 +258,7 @@ const Customization = {
 const TestCreateModal = {
     delimiters: ['[[', ']]'],
     components: {
-        Customization: Customization,
-        QualityGate: QualityGate
+        Customization: Customization
     },
     props: ['modal_id', 'runners', 'test_params_id', 'source_card_id', 'locations'],
     template: `
@@ -423,6 +419,7 @@ const TestCreateModal = {
                     v-model:parallel_runners="parallel_runners"
                     v-model:cpu="cpu_quota"
                     v-model:memory="memory_quota"
+                    v-model:cloud_settings="cloud_settings"
                     
                     modal_id="backend"
                     
@@ -479,13 +476,6 @@ const TestCreateModal = {
                                 </div>
                             </div>
                         </div>
-                        <div class="col">
-                            <QualityGate
-                                v-model:failed_thresholds_rate="quality_gate.failed_thresholds_rate"
-                                v-model:active="quality_gate.active"
-                                :error="errors.quality_gate"
-                            ></QualityGate>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -498,7 +488,6 @@ const TestCreateModal = {
     },
     mounted() {
         $(this.$el).on('hide.bs.modal', this.clear)
-        $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
         this.runner = this.default_runner
         $(this.source.el).find('a.nav-item').on('click', e => {
                 this.active_source_tab = this.source.get_active_tab(e.target.id)
@@ -549,20 +538,9 @@ const TestCreateModal = {
                     this.source.setError(newValue.source) :
                     this.source.clearErrors()
 
-                let quality_gate_error
                 newValue.integrations ?
-                    this.integrations?.setError(newValue.integrations.filter(i => {
-                        if (i.loc.includes('reporters_quality_gate')) {
-                            quality_gate_error = i
-                            return false
-                        }
-                        return true
-                    })) :
+                    this.integrations?.setError(newValue.integrations) :
                     this.integrations?.clearErrors()
-                if (quality_gate_error) {
-                    this.errors.quality_gate = quality_gate_error
-                    $(this.$refs.advanced_params).collapse('show')
-                }
 
                 newValue.scheduling ?
                     this.scheduling?.setError(newValue.scheduling) :
@@ -588,6 +566,18 @@ const TestCreateModal = {
                 return acc === '' ? item.msg : [acc, item.msg].join('; ')
             }, '')
         },
+        compareObjectsDiff(o1, o2={}, required_fields) {
+            return Object.keys(o2).reduce((diff, key) => {
+                if (o1[key] !== o2[key] || required_fields.includes(key)) {
+                    return {
+                        ...diff,
+                        [key]: o2[key]
+                    }
+                } else {
+                    return diff
+                }
+            }, {})
+        },
         get_data() {
 
             const data = {
@@ -600,20 +590,21 @@ const TestCreateModal = {
                     source: this.source.get(),
                     env_vars: {
                         cpu_quota: this.cpu_quota,
-                        memory_quota: this.memory_quota
+                        memory_quota: this.memory_quota,
+                        cloud_settings: this.compareObjectsDiff(
+                            this.$refs.locations.chosen_location_settings,
+                            this.cloud_settings,
+                            ["id", "integration_name", "instance_type"]
+                        )
                     },
                     parallel_runners: this.parallel_runners,
                     cc_env_vars: {},
-                    customization: this.customization
+                    customization: this.customization,
+                    location: this.location
                 },
                 test_parameters: this.test_parameters.get(),
                 integrations: this.integrations?.get() || {},
                 scheduling: this.scheduling?.get() || [],
-            }
-            if (this.quality_gate.active) {
-                data.integrations.reporters = {...data.integrations.reporters, quality_gate: {
-                    failed_thresholds_rate: this.quality_gate.failed_thresholds_rate
-                }}
             }
             let csv_files = {}
             $("#splitCSV .flex-row").slice(1,).each(function (_, item) {
@@ -693,6 +684,7 @@ const TestCreateModal = {
                 parallel_runners: 1,
                 cpu_quota: 1,
                 memory_quota: 4,
+                cloud_settings: {},
 
                 entrypoint: '',
                 runner: this.default_runner,
@@ -706,16 +698,12 @@ const TestCreateModal = {
                 advanced_params_icon: 'fas fa-chevron-down',
                 mode: 'create',
                 active_source_tab: undefined,
-                quality_gate: {
-                    active: false,
-                    failed_thresholds_rate: 20
-                },
             }
         },
         set(data) {
             const {test_parameters, integrations, scheduling, source, env_vars: all_env_vars, ...rest} = data
 
-            const {cpu_quota, memory_quota, ...env_vars} = all_env_vars
+            const {cpu_quota, memory_quota, cloud_settings, ...env_vars} = all_env_vars
 
             let test_type = ''
             let env_type = ''
@@ -728,23 +716,15 @@ const TestCreateModal = {
                     env_type = item.default;
                     return false
                 }
-                if (item.name === 'test_name') {
-                    return false
-                }
-                return true
+                return item.name !== 'test_name';
+
             })
             // common fields
-            Object.assign(this.$data, {...rest, cpu_quota, memory_quota, env_vars, test_type, env_type})
+            Object.assign(this.$data, {...rest, cpu_quota, memory_quota, cloud_settings, env_vars, test_type, env_type})
 
             // special fields
             this.test_parameters.set(test_parameters_filtered)
             this.source.set(source)
-
-            try {
-                this.quality_gate.failed_thresholds_rate = integrations.reporters.quality_gate.failed_thresholds_rate
-                this.quality_gate.active = true
-                $(this.$refs.advanced_params).collapse('show')
-            } catch (e) {}
             integrations && this.integrations.set(integrations)
             scheduling && this.scheduling.set(scheduling)
 
@@ -779,8 +759,6 @@ const TestCreateModal = {
 register_component('TestCreateModal', TestCreateModal)
 
 
-
-
 function addCSVSplit(id, key = "", is_header = "") {
     $(`#${id}`).append(`<div class="d-flex flex-row">
     <div class="flex-fill">
@@ -812,9 +790,6 @@ function addCSVSplit(id, key = "", is_header = "") {
 const TestRunModal = {
     delimiters: ['[[', ']]'],
     props: ['test_params_id', 'instance_name_prefix'],
-    components: {
-        QualityGate: QualityGate
-    },
     template: `
         <div class="modal modal-base fixed-left fade shadow-sm" tabindex="-1" role="dialog" id="runTestModal">
             <div class="modal-dialog modal-dialog-aside" role="document">
@@ -843,20 +818,12 @@ const TestRunModal = {
                             v-model:parallel_runners="parallel_runners"
                             v-model:cpu="cpu_quota"
                             v-model:memory="memory_quota"
+                            v-model:cloud_settings="cloud_settings"
                             
                             ref="locations"
                         ></Locations>
                         <slot name="integrations"></slot>
                         <div class="section">
-                            <div class="row">
-                                <div class="col-6">
-                                    <QualityGate
-                                        v-model:failed_thresholds_rate="quality_gate.failed_thresholds_rate"
-                                        v-model:active="quality_gate.active"
-                                        :error="errors.quality_gate"
-                                    ></QualityGate>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -878,7 +845,7 @@ const TestRunModal = {
     },
     mounted() {
         $(this.$el).on('hide.bs.modal', this.clear)
-        $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
+        // $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
     },
     data() {
         return this.initial_state()
@@ -893,6 +860,7 @@ const TestRunModal = {
                 parallel_runners: 1,
                 cpu_quota: 1,
                 memory_quota: 4,
+                cloud_settings: {},
 
                 env_vars: {},
                 customization: {},
@@ -900,27 +868,20 @@ const TestRunModal = {
 
                 compile_tests: false,
                 errors: {},
-                quality_gate: {
-                    active: false,
-                    failed_thresholds_rate: 20
-                },
             }
         },
         set(data) {
             console.log('set data called', data)
             const {test_parameters, env_vars: all_env_vars, integrations, ...rest} = data
 
-            const {cpu_quota, memory_quota, ...env_vars} = all_env_vars
+            const {cpu_quota, memory_quota, cloud_settings, ...env_vars} = all_env_vars
 
             // common fields
-            Object.assign(this.$data, {...rest, cpu_quota, memory_quota, env_vars,})
+            Object.assign(this.$data, {...rest, cpu_quota, memory_quota, cloud_settings, env_vars,})
 
             // special fields
             this.test_parameters.set(test_parameters)
-            try {
-                this.quality_gate.failed_thresholds_rate = integrations.reporters.quality_gate.failed_thresholds_rate
-                this.quality_gate.active = true
-            } catch (e) {}
+
             this.integrations.set(integrations)
             this.show()
         },
@@ -942,11 +903,6 @@ const TestRunModal = {
         get_data() {
             const test_params = this.test_parameters.get()
             const integrations = this.integrations.get()
-            if (this.quality_gate.active) {
-                integrations.reporters = {...integrations.reporters, quality_gate: {
-                    failed_thresholds_rate: this.quality_gate.failed_thresholds_rate
-                }}
-            }
             const name = test_params.find(i => i.name === 'test_name')
             const test_type = test_params.find(i => i.name === 'test_type')
             const env_type = test_params.find(i => i.name === 'env_type')
@@ -958,9 +914,11 @@ const TestRunModal = {
                     env_type: env_type,
                     env_vars: {
                         cpu_quota: this.cpu_quota,
-                        memory_quota: this.memory_quota
+                        memory_quota: this.memory_quota,
+                        cloud_settings: this.cloud_settings
                     },
-                    parallel_runners: this.parallel_runners
+                    parallel_runners: this.parallel_runners,
+                    location: this.location
                 },
                 test_parameters: test_params,
                 integrations: integrations,
@@ -1006,19 +964,9 @@ const TestRunModal = {
                 newValue.test_parameters ?
                     this.test_parameters.setError(newValue.test_parameters) :
                     this.test_parameters.clearErrors()
-                let quality_gate_error
                 newValue.integrations ?
-                    this.integrations?.setError(newValue.integrations.filter(i => {
-                        if (i.loc.includes('reporters_quality_gate')) {
-                            quality_gate_error = i
-                            return false
-                        }
-                        return true
-                    })) :
+                    this.integrations?.setError(newValue.integrations) :
                     this.integrations?.clearErrors()
-                if (quality_gate_error) {
-                    this.errors.quality_gate = quality_gate_error
-                }
             } else {
                 this.test_parameters.clearErrors()
                 this.integrations.clearErrors()

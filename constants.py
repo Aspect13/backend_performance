@@ -49,6 +49,16 @@ JMETER_MAPPING = {
 }
 
 GATLING_MAPPING = {
+    "v3.7": {
+        "container": f"getcarrier/perfgun:{CURRENT_RELEASE}-3.7",
+        "job_type": "perfgun",
+        "influx_db": "{{secret.gatling_db}}"
+    },
+    "v3.6": {
+        "container": f"getcarrier/perfgun:{CURRENT_RELEASE}-3.6",
+        "job_type": "perfgun",
+        "influx_db": "{{secret.gatling_db}}"
+    },
     "v3.1": {
         "container": f"getcarrier/perfgun:{CURRENT_RELEASE}-3.1",
         "job_type": "perfgun",
@@ -60,9 +70,24 @@ GATLING_MAPPING = {
         "influx_db": "{{secret.gatling_db}}"
     }
 }
+
+EXECUTABLE_MAPPING = {
+    "gatling": {
+        "container": f"getcarrier/executable_jar_runner:{CURRENT_RELEASE}-gatling",
+        "job_type": "perfgun",
+        "influx_db": "{{secret.gatling_db}}"
+    },
+    "base (in development)": {
+        "container": f"getcarrier/executable_jar_runner:{CURRENT_RELEASE}-base",
+        "job_type": "perfgun",
+        "influx_db": "{{secret.gatling_db}}"
+    }
+}
+
 JOB_CONTAINER_MAPPING = {
     **JMETER_MAPPING,
-    **GATLING_MAPPING
+    **GATLING_MAPPING,
+    **EXECUTABLE_MAPPING
 }
 
 JOB_TYPE_MAPPING = {

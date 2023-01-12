@@ -1,11 +1,8 @@
-import json
-import gzip
 from ...models.api_reports import APIReport
 import flask
 from flask import make_response
 from flask_restful import Resource
-from pylon.core.tools import log
-from pylon.core.seeds.minio import MinIOHelper
+from ....shared.tools.constants import APP_HOST
 
 
 class API(Resource):
@@ -25,10 +22,8 @@ class API(Resource):
 
         build_id = APIReport.query.get_or_404(report_id).to_json()["build_id"]
 
-        websocket_base_url = self.module.context.settings['loki']['url']
-        websocket_base_url = websocket_base_url.replace("http://", "ws://")
-        websocket_base_url = websocket_base_url.replace("api/v1/push", "api/v1/tail")
-
+        websocket_base_url = APP_HOST.replace("http://", "ws://").replace("https://", "wss://")
+        websocket_base_url += "/loki/api/v1/tail"
         logs_query = "{" + f'report_id="{report_id}",project="{project_id}",build_id="{build_id}"' + "}"
 
         logs_start = 0

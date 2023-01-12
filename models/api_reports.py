@@ -61,6 +61,9 @@ class APIReport(db_tools.AbstractBaseMixin, db.Base):
         }
     )
     test_config = Column(JSON, nullable=False, unique=False)
+    # engagement id
+    engagement = Column(String(64), nullable=True, default=None)
+
 
     def to_json(self, exclude_fields: tuple = ()) -> dict:
         json_dict = super().to_json(exclude_fields=("requests",))

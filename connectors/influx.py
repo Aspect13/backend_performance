@@ -15,16 +15,18 @@
 from datetime import datetime, timezone
 
 from tools import influx_tools
-from ...shared.tools.constants import str_to_timestamp, MAX_DOTS_ON_CHART
+from tools import constants as c
 from ..models.api_reports import APIReport
-from pylon.core.tools import web, log
+from pylon.core.tools import log
 
 
-def get_project_id(build_id):
-    return APIReport.query.filter_by(build_id=build_id).first().to_json()["project_id"]
+def get_project_id(build_id: str) -> int:
+    # return APIReport.query.filter_by(build_id=build_id).first().to_json()["project_id"]
+    resp = APIReport.query.with_entities(APIReport.project_id).filter(APIReport.build_id == build_id).first()
+    return resp[0]
 
 
-def get_aggregated_test_results(test, build_id):
+def get_aggregated_test_results(test, build_id: str):
     project_id = get_project_id(build_id)
     query = f"SELECT * from api_comparison where simulation='{test}' and build_id='{build_id}'"
     return list(influx_tools.get_client(project_id, f'comparison_{project_id}').query(query))
@@ -80,7 +82,7 @@ def get_test_details(project_id, build_id, test_name, lg_type):
     client = influx_tools.get_client(project_id)
     test["start_time"] = list(client.query(q_start_time)["users"])[0]["time"]
     test["end_time"] = list(client.query(q_end_time)["users"])[0]["time"]
-    test["duration"] = round(str_to_timestamp(test["end_time"]) - str_to_timestamp(test["start_time"]), 1)
+    test["duration"] = round(c.str_to_timestamp(test["end_time"]) - c.str_to_timestamp(test["start_time"]), 1)
     test["vusers"] = list(client.query(q_total_users)["api_comparison"])[0]["value"]
     test["environment"] = list(client.query(q_env)["api_comparison"])[0]["value"]
     test["type"] = list(client.query(q_type)["api_comparison"])[0]["value"]
@@ -124,7 +126,8 @@ def get_backend_requests(build_id, test_name, lg_type, start_time, end_time, agg
 
     if not (timestamps and users):
         timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
-    query = f"select time, {group_by}percentile(\"{aggr}\", 95) as rt from {lg_type}_{project_id}..{test_name}_{aggregation} " \
+    query = f"select time, {group_by}percentile(\"{aggr}\", 95) as rt " \
+            f"from {lg_type}_{project_id}..{test_name}_{aggregation} " \
             f"where time>='{start_time}' and time<='{end_time}' {status_addon} and sampler_type='{sampler}' and " \
             f"build_id='{build_id}' {scope_addon} group by {group_by}time({aggregation})"
     res = influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregation}"]
@@ -539,7 +542,7 @@ def calculate_auto_aggregation(build_id, test_name, lg_type, start_time, end_tim
                 f"where time>='{start_time}' and time<='{end_time}' and build_id='{build_id}' group by time({aggr}))"
         result = list(client.query(query)[f"{test_name}_{aggr}"])
         if result:
-            if int(result[0]["sum"]) > MAX_DOTS_ON_CHART and aggregation != "10m":
+            if int(result[0]["sum"]) > c.MAX_DOTS_ON_CHART and aggregation != "10m":
                 aggregation = aggr_list[i + 1]
             if int(result[0]["sum"]) == 0 and aggregation != "1s":
                 aggregation = "30s"
@@ -551,3 +554,65 @@ def get_sampler_types(project_id, build_id, test_name, lg_type):
     q_samplers = f"show tag values on {lg_type}_{project_id} with key=sampler_type where build_id='{build_id}'"
     client = influx_tools.get_client(project_id)
     return [each["value"] for each in list(client.query(q_samplers)[f"{test_name}_1s"])]
+
+
+def get_engine_health(query: str, influx_client=None, **kwargs):
+    if influx_client:
+        result = influx_client.query(query)
+    else:
+        project_id = get_project_id(kwargs['build_id'])
+        client = influx_client or influx_tools.get_client(project_id, f'telegraf_{project_id}')
+        result = client.query(query)
+
+    data = dict()
+    for (_, groups), series in result.items():
+        data[groups['host']] = list(series)
+
+    return data
+
+
+def get_engine_health_cpu(influx_client=None, **kwargs):
+    query = '''
+        SELECT 
+            mean(usage_system) as "system",
+            mean(usage_user) as "user",
+            mean(usage_softirq) as "softirq",
+            mean(usage_iowait) as "iowait"
+        FROM "cpu" 
+        WHERE "build_id" = '{build_id}'
+        AND cpu = 'cpu-total' 
+        AND time >= '{start_time}'
+        AND time <= '{end_time}'
+        GROUP BY time({aggregation}), host
+    '''.format(**kwargs)
+    return get_engine_health(query, influx_client=influx_client, **kwargs)
+
+
+def get_engine_health_memory(influx_client=None, **kwargs):
+    query = '''
+        SELECT 
+            HeapMemoryUsage.used as "heap memory", 
+            NonHeapMemoryUsage.used as "non-heap memory"
+        FROM "java_memory" 
+        WHERE "build_id" = '{build_id}'
+        AND time >= '{start_time}'
+        AND time <= '{end_time}'
+        GROUP BY host
+    '''.format(**kwargs)
+
+    return get_engine_health(query, influx_client=influx_client, **kwargs)
+
+
+def get_engine_health_load(influx_client=None, **kwargs):
+    query = '''
+        SELECT 
+            mean(load1) as "load1",
+            mean(load5) as "load5",
+            mean(load15) as "load15"
+        FROM "system" 
+        WHERE "build_id" = '{build_id}'
+        AND time >= '{start_time}'
+        AND time <= '{end_time}'
+        GROUP BY time({aggregation}), host
+    '''.format(**kwargs)
+    return get_engine_health(query, influx_client=influx_client, **kwargs)

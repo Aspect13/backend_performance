@@ -13,12 +13,12 @@
 #   limitations under the License.
 
 from requests import get
-from ...shared.tools.constants import LOKI_HOST
-from pylon.core.tools import web, log
+from tools import constants as c
+from pylon.core.tools import log
 
 
 def get_results(test, int_start_time, int_end_time):
-    url = f"{LOKI_HOST}/loki/api/v1/query_range"
+    url = f"{c.LOKI_HOST}/loki/api/v1/query_range"
     data = {
         "direction": "BACKWARD",
         "limit": 5000,
