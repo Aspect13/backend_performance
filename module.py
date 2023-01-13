@@ -16,6 +16,7 @@
 #   limitations under the License.
 
 """ Module """
+from queue import Empty
 
 from pylon.core.tools import log  # pylint: disable=E0611,E0401
 from pylon.core.tools import module  # pylint: disable=E0611,E0401
@@ -70,17 +71,21 @@ class Module(module.ModuleModel):
             prefix="results_",
         )
 
-        self.context.rpc_manager.call.integrations_register_section(
-            name='Processing',
-            integration_description='Manage processing',
-            test_planner_description='Specify processing tools. You may also set processors in <a '
-                                     'href="{}">Integrations</a> '.format('/-/configuration/integrations/')
-        )
+        try:
+            self.context.rpc_manager.timeout(3).integrations_register_section(
+                name='Processing',
+                integration_description='Manage processing',
+                test_planner_description='Specify processing tools. You may also set processors in <a '
+                                         'href="{}">Integrations</a> '.format('/-/configuration/integrations/')
+            )
 
-        self.context.rpc_manager.call.integrations_register(
-            name='quality_gate',
-            section='Processing',
-        )
+            self.context.rpc_manager.timeout(3).integrations_register(
+                name='quality_gate',
+                section='Processing',
+            )
+        except Empty:
+            log.warning('No integrations plugin present')
+            ...
 
         self.descriptor.init_slots()
 

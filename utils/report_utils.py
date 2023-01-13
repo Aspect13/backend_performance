@@ -1,4 +1,8 @@
+from collections import defaultdict
 from datetime import datetime
+from typing import Union
+
+from ..connectors.influx import calculate_auto_aggregation
 from ..connectors.minio import calculate_auto_aggregation as calculate_auto_aggregation_minio
 from ..connectors.influx import calculate_auto_aggregation as calculate_auto_aggregation_influx
 
@@ -14,16 +18,16 @@ def create_dataset(timeline, data, scope, metric, axe):
     colors = data_tools.charts.color_gen(len(scope))
     for each, color in zip(scope, colors):
         datasets.append({
-                "label": f"{each}_{metric}",
-                "fill": False,
-                "data": list(data.values()),
-                "yAxisID": axe,
-                "borderWidth": 2,
-                "lineTension": 0,
-                "spanGaps": True,
-                "backgroundColor": "rgb({}, {}, {})".format(*color),
-                "borderColor": "rgb({}, {}, {})".format(*color)
-            })
+            "label": f"{each}_{metric}",
+            "fill": False,
+            "data": list(data.values()),
+            "yAxisID": axe,
+            "borderWidth": 2,
+            "lineTension": 0,
+            "spanGaps": True,
+            "backgroundColor": "rgb({}, {}, {})".format(*color),
+            "borderColor": "rgb({}, {}, {})".format(*color)
+        })
     return {
         "labels": labels,
         "datasets": datasets
@@ -39,16 +43,16 @@ def _create_dataset(timeline, data, scope, metric, axe):
     for each, color in zip(data, colors):
         key = list(each.keys())[0]
         datasets.append({
-                "label": f"{key}_{metric}",
-                "fill": False,
-                "data": list(each[key].values()),
-                "yAxisID": axe,
-                "borderWidth": 2,
-                "lineTension": 0,
-                "spanGaps": True,
-                "backgroundColor": "rgb({}, {}, {})".format(*color),
-                "borderColor": "rgb({}, {}, {})".format(*color)
-            })
+            "label": f"{key}_{metric}",
+            "fill": False,
+            "data": list(each[key].values()),
+            "yAxisID": axe,
+            "borderWidth": 2,
+            "lineTension": 0,
+            "spanGaps": True,
+            "backgroundColor": "rgb({}, {}, {})".format(*color),
+            "borderColor": "rgb({}, {}, {})".format(*color)
+        })
     return {
         "labels": labels,
         "datasets": datasets
@@ -123,7 +127,7 @@ def chart_data(timeline, users, other, yAxis="response_time", convert_time: bool
     return _data
 
 
-def render_analytics_control(requests):
+def render_analytics_control(requests: list) -> dict:
     item = {
         "Users": "getData('Users', '{}')",
         # "Hits": "getData('Hits', '{}')",
@@ -141,9 +145,8 @@ def render_analytics_control(requests):
         "4xx": "getData('4xx', '{}')",
         "5xx": "getData('5xx', '{}')"
     }
-    control = {}
-    for each in ["All"] + requests:
-        control[each] = {}
+    control = defaultdict(dict)
+    for each in ["All", *requests]:
         for every in item:
             control[each][every] = item[every].format(each)
     return control

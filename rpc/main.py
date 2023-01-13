@@ -1,12 +1,12 @@
 from typing import Optional, Union
 
 from tools import rpc_tools
-from ..models.api_reports import APIReport
+from ..models.report import Report
 from pylon.core.tools import web, log
 from pydantic import ValidationError
 
-from ..models.api_tests import PerformanceApiTest
-from ..models.pd.performance_test import TestCommon, TestOverrideable
+from ..models.test import Test
+from ..models.pd.test import TestCommon, TestOverrideable
 from ..models.pd.test_parameters import PerformanceTestParams, PerformanceTestParamsCreate, PerformanceTestParamsRun
 from ..models.pd.quality_gate import QualityGate
 from ..utils.utils import run_test
@@ -16,7 +16,7 @@ class RPC:
     @web.rpc('backend_results_or_404', 'results_or_404')
     @rpc_tools.wrap_exceptions(RuntimeError)
     def backend_results_or_404(self, run_id):
-        return APIReport.query.get_or_404(run_id)
+        return Report.query.get_or_404(run_id)
 
     @web.rpc('backend_performance_test_create_common_parameters', 'parse_common_test_parameters')
     # @rpc_tools.wrap_exceptions(RuntimeError)
@@ -49,7 +49,7 @@ class RPC:
     @web.rpc('backend_performance_run_scheduled_test', 'run_scheduled_test')
     @rpc_tools.wrap_exceptions(RuntimeError)
     def run_scheduled_test(self, test_id: int, test_params: list) -> dict:
-        test = PerformanceApiTest.query.filter(PerformanceApiTest.id == test_id).one()
+        test = Test.query.filter(Test.id == test_id).one()
         test_params_schedule_pd = PerformanceTestParams(test_parameters=test_params)
         test_params_existing_pd = PerformanceTestParams.from_orm(test)
         test_params_existing_pd.update(test_params_schedule_pd)
@@ -58,9 +58,9 @@ class RPC:
 
     @web.rpc('backend_performance_job_type_by_uid')
     @rpc_tools.wrap_exceptions(RuntimeError)
-    def job_type_by_uid(self, project_id: int, test_uid: str) -> Optional[str]:
-        test = PerformanceApiTest.query.filter(
-                PerformanceApiTest.get_api_filter(project_id, test_uid)
+    def job_type_by_uid(self, project_id: int, uid: str) -> Optional[str]:
+        test = Test.query.filter(
+                Test.get_api_filter(project_id, uid)
         ).first()
         if test:
             return test.job_type

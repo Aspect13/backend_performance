@@ -16,13 +16,13 @@ from datetime import datetime, timezone
 
 from tools import influx_tools
 from tools import constants as c
-from ..models.api_reports import APIReport
+from ..models.report import Report
 from pylon.core.tools import log
 
 
 def get_project_id(build_id: str) -> int:
-    # return APIReport.query.filter_by(build_id=build_id).first().to_json()["project_id"]
-    resp = APIReport.query.with_entities(APIReport.project_id).filter(APIReport.build_id == build_id).first()
+    # return Report.query.filter_by(build_id=build_id).first().to_json()["project_id"]
+    resp = Report.query.with_entities(Report.project_id).filter(Report.build_id == build_id).first()
     return resp[0]
 
 

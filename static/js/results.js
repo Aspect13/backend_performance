@@ -1,6 +1,3 @@
-// let low_value = 0
-// let high_value = 100
-
 window.presetLine = undefined  // this is requests/transactions chart
 const result_test_id = new URLSearchParams(location.search).get('result_id')
 
@@ -25,7 +22,6 @@ const reRunTest = () => {
     })
 }
 
-
 const setBaseline = async () => {
     const resp = await fetch(`/api/v1/backend_performance/baseline/${getSelectedProjectId()}`, {
         method: 'POST',
@@ -39,13 +35,13 @@ const stopTest = async () => {
     const resp = await fetch(`/api/v1/backend_performance/report_status/${getSelectedProjectId()}/${result_test_id}`, {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: {
+        body: JSON.stringify({
             "test_status": {
                 "status": "Canceled",
                 "percentage": 100,
                 "description": "Test was canceled"
             }
-        }
+        })
     })
     resp.ok ? location.reload() : console.warn('stop test failed', resp)
 }
@@ -226,7 +222,7 @@ const SummaryController = {
             })
         },
         async poll_test_status() {
-            if (this.status_percentage == 100) {
+            if (this.status_percentage !== 100) {
                 const resp = await fetch(`/api/v1/backend_performance/reports/${getSelectedProjectId()}/?report_id=${result_test_id}`)
                 if (resp.ok) {
                     const {test_status: {percentage}} = await resp.json()

@@ -26,7 +26,7 @@ def compile_tests(project_id, file_name, runner):
                           tty=True, user='0:0')
 
 
-def get_backend_test_data(event):
+def get_backend_test_data(event) -> dict:
     users_count = 0
     duration = 0
     vusers_var_names = ["vusers", "users", "users_count", "ramp_users", "user_count"]
@@ -84,7 +84,7 @@ def _calculate_limit(limit, total):
     return len(total) if limit == 'All' else limit
 
 
-def run_test(test: 'PerformanceApiTest', config_only: bool = False, execution: bool = False, engagement_id: str = None
+def run_test(test: 'Test', config_only: bool = False, execution: bool = False, engagement_id: str = None
 ) -> dict:
     event = test.configure_execution_json(
         execution=execution
@@ -94,8 +94,8 @@ def run_test(test: 'PerformanceApiTest', config_only: bool = False, execution: b
         return event
 
     test_data = get_backend_test_data(event)
-    from ..models.api_reports import APIReport
-    report = APIReport(
+    from ..models.report import Report
+    report = Report(
         name=test_data["test_name"],
         project_id=test.project_id,
         environment=test_data["environment"],
@@ -113,8 +113,8 @@ def run_test(test: 'PerformanceApiTest', config_only: bool = False, execution: b
         build_id=test_data["build_id"],
         lg_type=test_data["lg_type"],
         onexx=0, twoxx=0, threexx=0, fourxx=0, fivexx=0,
-        requests="",
-        test_uid=test.test_uid,
+        requests=[],
+        test_uid=test.uid,
         test_config=test.api_json(),
         engagement=engagement_id
     )
@@ -182,8 +182,11 @@ def parse_test_data(project_id: int, request_data: dict,
         cloud_settings["memory_limit"] = common_params['env_vars']["memory_quota"]
         cloud_settings["concurrency"] = common_params['parallel_runners']
 
-        request_data["integrations"]["clouds"] = {}
-        request_data["integrations"]["clouds"][integration_name] = cloud_settings
+        integrations = request_data.get('integrations', {})
+        integrations['clouds'] = {
+            integration_name: cloud_settings
+        }
+        request_data['integrations'] = integrations
 
     try:
         test_data = rpc.call.backend_performance_test_create_common_parameters(

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
-from typing import Callable, Optional, Generator
+from typing import Callable, Optional, Generator, Union
 
-from ..models.api_reports import APIReport
+from pydantic import BaseModel, validator
+from ..models.report import Report
 from ..connectors.influx import (
     get_backend_requests, get_hits_tps, average_responses, get_build_data,
     get_tps_for_analytics, get_response_codes_for_analytics, get_backend_users,
@@ -16,6 +17,43 @@ from .report_utils import calculate_proper_timeframe, chart_data, create_dataset
 from pylon.core.tools import log
 
 from tools import constants as c, influx_tools, data_tools
+
+
+class TimeframeArgs(BaseModel):
+    start_time: datetime
+    end_time: Optional[datetime]
+    low_value: Union[int, float, str, None] = 0
+    high_value: Union[int, float, str, None] = 100
+    test_name: str
+    build_id: Optional[str]
+    lg_type: Optional[str]
+    aggregation: Optional[str] = 'auto'
+    source: Optional[str] = 'influx'
+
+    @validator('end_time', always=True)
+    def set_end_time(cls, value, values: dict):
+        if not value:
+            values['high_value'] = 100
+            return datetime.utcnow()
+        return value
+
+    @validator('start_time', 'end_time')
+    def ensure_tz(cls, value: datetime):
+        if value.tzinfo:
+            return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=timezone.utc)
+
+    @validator('low_value', 'high_value')
+    def convert(cls, value, values, field):
+        try:
+            return int(value)
+        except TypeError:
+            return field.default
+
+    class Config:
+        fields = {
+            'aggregator': 'aggregation'
+        }
 
 
 def _timeframe(args: dict, time_as_ts: bool = False) -> tuple:
@@ -42,7 +80,7 @@ def _query_only(args: dict, query_func: Callable) -> dict:
 
 
 def get_tests_metadata(tests):
-    tests_meta = APIReport.query.filter(APIReport.id.in_(tests)).order_by(APIReport.id.asc()).all()
+    tests_meta = Report.query.filter(Report.id.in_(tests)).order_by(Report.id.asc()).all()
     users_data = {}
     responses_data = {}
     errors_data = {}
@@ -136,13 +174,14 @@ def get_data_from_influx(args):
 
 
 def prepare_comparison_responses(args):
+    log.info('prepare_comparison_responses %s', args)
     tests = args['id[]']
     tests_meta = []
     longest_test = 0
     longest_time = 0
     sampler = args.get('sampler', "REQUEST")
     for i in range(len(tests)):
-        data = APIReport.query.filter_by(id=tests[i]).first().to_json()
+        data = Report.query.filter_by(id=tests[i]).first().to_json()
         if data['duration'] > longest_time:
             longest_time = data['duration']
             longest_test = i
@@ -196,7 +235,7 @@ def create_benchmark_dataset(args):
     status = args.get("status", 'all')
     if not aggregator or aggregator == 'auto':
         aggregator = '1s'
-    tests_meta = APIReport.query.filter(APIReport.id.in_(build_ids)).order_by(APIReport.vusers.asc()).all()
+    tests_meta = Report.query.filter(Report.id.in_(build_ids)).order_by(Report.vusers.asc()).all()
     labels = set()
     data = {}
     y_axis = ''

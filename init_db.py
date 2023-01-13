@@ -2,10 +2,9 @@ from tools import db
 
 
 def init_db():
-    from .models.api_reports import APIReport
-    # from .models.api_tag import APITag
-    from .models.api_baseline import APIBaseline
-    from .models.api_tests import PerformanceApiTest
-    from .models.api_thresholds import APIThresholds
+    from .models.report import Report
+    from .models.baseline import Baseline
+    from .models.test import Test
+    from .models.threshold import Threshold
     db.Base.metadata.create_all(bind=db.engine)
 

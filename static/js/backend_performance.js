@@ -674,7 +674,7 @@ const TestCreateModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 name: '',
                 test_type: '',
@@ -725,7 +725,7 @@ const TestCreateModal = {
             // special fields
             this.test_parameters.set(test_parameters_filtered)
             this.source.set(source)
-            integrations && this.integrations.set(integrations)
+            integrations && this.integrations?.set(integrations)
             scheduling && this.scheduling.set(scheduling)
 
             rest?.customization && $(this.$refs.advanced_params).collapse('show')
@@ -736,7 +736,7 @@ const TestCreateModal = {
             Object.assign(this.$data, this.initial_state())
             this.test_parameters.clear()
             this.source.clear()
-            this.integrations.clear()
+            this.integrations?.clear()
             this.scheduling.clear()
             $('#backend_parallel').text(this.parallel_runners)
             $('#backend_cpu').text(this.cpu_quota)
@@ -823,8 +823,6 @@ const TestRunModal = {
                             ref="locations"
                         ></Locations>
                         <slot name="integrations"></slot>
-                        <div class="section">
-                        </div>
                     </div>
                 </div>
             </div>
@@ -845,7 +843,6 @@ const TestRunModal = {
     },
     mounted() {
         $(this.$el).on('hide.bs.modal', this.clear)
-        // $(this.$el).on('show.bs.modal', this.$refs.locations.fetch_locations)
     },
     data() {
         return this.initial_state()
@@ -854,7 +851,7 @@ const TestRunModal = {
         initial_state() {
             return {
                 id: null,
-                test_uid: null,
+                uid: null,
 
                 location: 'default',
                 parallel_runners: 1,
@@ -882,7 +879,7 @@ const TestRunModal = {
             // special fields
             this.test_parameters.set(test_parameters)
 
-            this.integrations.set(integrations)
+            this.integrations?.set(integrations)
             this.show()
         },
         show() {
@@ -895,14 +892,14 @@ const TestRunModal = {
         clear() {
             Object.assign(this.$data, this.initial_state())
             this.test_parameters.clear()
-            this.integrations.clear()
+            this.integrations?.clear()
         },
         clearErrors() {
             this.errors = {}
         },
         get_data() {
             const test_params = this.test_parameters.get()
-            const integrations = this.integrations.get()
+            const integrations = this.integrations?.get()
             const name = test_params.find(i => i.name === 'test_name')
             const test_type = test_params.find(i => i.name === 'test_type')
             const env_type = test_params.find(i => i.name === 'env_type')
@@ -969,7 +966,7 @@ const TestRunModal = {
                     this.integrations?.clearErrors()
             } else {
                 this.test_parameters.clearErrors()
-                this.integrations.clearErrors()
+                this.integrations?.clearErrors()
             }
         }
     },

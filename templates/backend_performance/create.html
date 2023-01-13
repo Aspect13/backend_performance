@@ -2,7 +2,6 @@
 {#{% set modal_id = 'create_modal' %}#}
 {% set source_container_id = "source_card" %}
 
-
 <Test-Create-Modal
         @register="register"
         instance_name="{{ modal_id }}"
@@ -11,7 +10,7 @@
         :runners='{{ runners | tojson }}'
         test_params_id="{{ modal_id }}_test_params"
         source_card_id="{{ source_container_id }}"
-        :locations='{{ locations }}'
+        :locations='{{ locations | tojson }}'
 >
     <template #alert_bar>
         {{ template_slot("alert_bar", payload={

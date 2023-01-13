@@ -20,18 +20,17 @@ from typing import List, Union, Optional
 from pylon.core.tools import log
 from sqlalchemy import Column, Integer, String, JSON, ARRAY, and_
 
-from tools import db_tools, db, rpc_tools, secrets_tools
-from tools import constants as c
+from tools import db_tools, db, rpc_tools, secrets_tools, constants as c
 from .pd.execution_json import ExecutionParams, CcEnvVars
 from ..constants import JOB_CONTAINER_MAPPING
 from .pd.test_parameters import PerformanceTestParams
 
 
-class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin):
-    __tablename__ = "performance_tests_api"
+class Test(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin):
+    __tablename__ = "backend_tests_3"
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
-    test_uid = Column(String(128), unique=True, nullable=False)
+    uid = Column(String(128), unique=True, nullable=False)
     name = Column(String(128), nullable=False)
 
     parallel_runners = Column(Integer, nullable=False)
@@ -104,7 +103,7 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
             galloper_url=secrets_tools.unsecret("{{secret.galloper_url}}", project_id=self.project_id),
             token=secrets_tools.unsecret("{{secret.auth_token}}", project_id=self.project_id),
             control_tower_version=c.CURRENT_RELEASE,
-            test_id=self.test_uid
+            test_id=self.uid
         )
 
     def filtered_test_parameters_unsecret(self, test_parameters: Optional[dict] = None) -> list:
@@ -155,7 +154,7 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
             )
         return and_(
             cls.project_id == project_id,
-            cls.test_uid == test_id
+            cls.uid == test_id
         )
 
     def configure_execution_json(self, execution: bool = False) -> dict:
@@ -191,7 +190,7 @@ class PerformanceApiTest(db_tools.AbstractBaseMixin, db.Base, rpc_tools.RpcMixin
             "kubernetes") else self.location
 
         execution_json = {
-            'test_id': self.test_uid,
+            'test_id': self.uid,
             "container": self.container,
             "execution_params": json.dumps(exec_params),
             "cc_env_vars": CcEnvVars.from_orm(self).dict(exclude_none=True),

@@ -17,14 +17,13 @@ from sqlalchemy import String, Column, Integer, Float, Text, ARRAY, JSON
 from tools import db_tools, db
 
 
-class APIReport(db_tools.AbstractBaseMixin, db.Base):
-    __tablename__ = "performance_report_api"
+class Report(db_tools.AbstractBaseMixin, db.Base):
+    __tablename__ = "backend_reports_3"
 
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
     test_uid = Column(String(128), unique=False, nullable=False)
     name = Column(String(128), unique=False)
-    status = Column(String(128), unique=False)
     environment = Column(String(128), unique=False)
     type = Column(String(128), unique=False)
     end_time = Column(String(128), unique=False)
@@ -50,7 +49,7 @@ class APIReport(db_tools.AbstractBaseMixin, db.Base):
     threexx = Column(Integer, unique=False)
     fourxx = Column(Integer, unique=False)
     fivexx = Column(Integer, unique=False)
-    requests = Column(Text, unique=False)
+    requests = Column(ARRAY(String), default=[])
     tags = Column(ARRAY(String), default=[])
     test_status = Column(
         JSON,
@@ -65,15 +64,15 @@ class APIReport(db_tools.AbstractBaseMixin, db.Base):
     engagement = Column(String(64), nullable=True, default=None)
 
 
-    def to_json(self, exclude_fields: tuple = ()) -> dict:
-        json_dict = super().to_json(exclude_fields=("requests",))
-        json_dict["requests"] = self.requests.split(";")
-        return json_dict
+    # def to_json(self, exclude_fields: tuple = ()) -> dict:
+    #     json_dict = super().to_json(exclude_fields=("requests",))
+    #     json_dict["requests"] = self.requests.split(";")
+    #     return json_dict
 
     def insert(self):
         if not self.test_config:
-            from .api_tests import PerformanceApiTest
-            self.test_config = PerformanceApiTest.query.filter(
-                PerformanceApiTest.test_uid == self.test_uid
+            from .test import Test
+            self.test_config = Test.query.filter(
+                Test.uid == self.test_uid
             ).first().api_json()
         super().insert()
