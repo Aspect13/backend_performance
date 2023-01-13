@@ -38,7 +38,7 @@ class API(Resource):
     def get_schedules_ids(filter_) -> set:
         r = set()
         for i in Test.query.with_entities(Test.schedules).filter(
-                filter_
+            filter_
         ).all():
             r.update(set(*i))
         return r

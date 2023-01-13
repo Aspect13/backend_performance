@@ -13,6 +13,8 @@ from ..constants import JOB_CONTAINER_MAPPING, JOB_TYPE_MAPPING
 
 from tools import task_tools, rpc_tools
 
+from ..models.pd.report import ReportCreateSerializer
+
 
 def compile_tests(project_id, file_name, runner):
     from flask import current_app
@@ -26,12 +28,15 @@ def compile_tests(project_id, file_name, runner):
                           tty=True, user='0:0')
 
 
-def get_backend_test_data(event):
+def get_backend_test_data(event) -> dict:
     users_count = 0
     duration = 0
     vusers_var_names = ["vusers", "users", "users_count", "ramp_users", "user_count"]
     lg_type = JOB_TYPE_MAPPING.get(event["job_type"], "other")
     tests_count = 1
+    test_name = None
+    test_type = None
+    environment = None
     if lg_type == 'jmeter':
         for i in range(tests_count):
             exec_params = json.loads(event["execution_params"])["cmd"] + " "
@@ -72,7 +77,7 @@ def get_backend_test_data(event):
         return {}
     start_time = datetime.utcnow().isoformat()
 
-    data = {'build_id': f'build_{uuid4()}', 'test_name': test_name, 'lg_type': lg_type,
+    data = {'build_id': f'build_{uuid4()}', 'name': test_name, 'lg_type': lg_type,
             'type': test_type,
             'duration': duration, 'vusers': users_count, 'environment': environment,
             'start_time': start_time,
@@ -96,28 +101,14 @@ def run_test(test: 'Test', config_only: bool = False, execution: bool = False, e
     test_data = get_backend_test_data(event)
     from ..models.reports import Report
     # todo: create report from pd model
-    report = Report(
-        name=test_data["test_name"],
-        project_id=test.project_id,
-        environment=test_data["environment"],
-        type=test_data["type"],
-        start_time=test_data["start_time"],
-        failures=0,
-        total=0,
-        thresholds_missed=0,
-        throughput=0,
-        vusers=test_data["vusers"],
-        pct50=0, pct75=0, pct90=0, pct95=0, pct99=0,
-        _max=0, _min=0, mean=0,
-        duration=test_data["duration"],
-        build_id=test_data["build_id"],
-        lg_type=test_data["lg_type"],
-        onexx=0, twoxx=0, threexx=0, fourxx=0, fivexx=0,
-        requests="",
+    report_serializer = ReportCreateSerializer(
+        **test_data,
         uid=test.uid,
+        project_id=test.project_id,
         test_config=test.api_json(),
         engagement=engagement_id
     )
+    report = Report(**report_serializer.dict(by_alias=True))
     report.insert()
     event["cc_env_vars"]["REPORT_ID"] = str(report.id)
     event["cc_env_vars"]["build_id"] = test_data["build_id"]

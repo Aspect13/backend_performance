@@ -18,17 +18,20 @@ from tools import MinioClient, rpc_tools
 from ..models.reports import Report
 from pylon.core.tools import log
 
+from ..tmp import dlog
 
+
+@dlog
 def get_project_id(build_id: str) -> int:
     resp = Report.query.with_entities(Report.project_id).filter(Report.build_id == build_id).first()
     return resp[0]
 
-
+@dlog
 def get_client(project_id) -> MinioClient:
     rpc = rpc_tools.RpcMixin().rpc
     return MinioClient(rpc.call.project_get_or_404(project_id))
 
-
+@dlog
 def calculate_auto_aggregation(build_id, test_name, lg_type, start_time, end_time):
     project_id = get_project_id(build_id)
     client = get_client(project_id)
@@ -46,7 +49,7 @@ def calculate_auto_aggregation(build_id, test_name, lg_type, start_time, end_tim
             break
     return aggregation
 
-
+@dlog
 def calculate_timestamps(start_time: str, end_time: str) -> list:
     t_format = "%Y-%m-%dT%H:%M:%S.000Z"
     start_time = datetime.strptime(start_time, t_format)
@@ -57,7 +60,7 @@ def calculate_timestamps(start_time: str, end_time: str) -> list:
         start_time += timedelta(seconds=1)
     return timestamps
 
-
+@dlog
 def get_backend_users(build_id, test_name, aggregation):
     project_id = get_project_id(build_id)
     client = get_client(project_id)
@@ -80,7 +83,7 @@ def get_backend_users(build_id, test_name, aggregation):
             _tmp = []
     return timestamps, results
 
-
+@dlog
 def get_requests_summary_data(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                               timestamps=None, users=None, scope=None, aggr='pct95', status='all'):
     scope_addon = ""

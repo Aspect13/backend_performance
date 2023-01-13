@@ -20,20 +20,21 @@ from ..models.reports import Report
 from pylon.core.tools import log
 
 from ..models.pd.report import ReportCreateSerializer
+from ..tmp import dlog
 
 
+@dlog
 def get_project_id(build_id: str) -> int:
-    # return Report.query.filter_by(build_id=build_id).first().to_json()["project_id"]
     resp = Report.query.with_entities(Report.project_id).filter(Report.build_id == build_id).first()
     return resp[0]
 
-
+@dlog
 def get_aggregated_test_results(test, build_id: str):
     project_id = get_project_id(build_id)
     query = f"SELECT * from api_comparison where simulation='{test}' and build_id='{build_id}'"
     return list(influx_tools.get_client(project_id, f'comparison_{project_id}').query(query))
 
-
+@dlog
 def delete_test_data(build_id, test_name, lg_type):
     project_id = get_project_id(build_id)
     query_one = f"DELETE from {test_name} where build_id='{build_id}'"
@@ -48,6 +49,7 @@ def delete_test_data(build_id, test_name, lg_type):
 
 
 # def get_test_details(project_id: int, build_id: str, test_name: str, lg_type: str) -> dict:
+@dlog
 def get_test_details(test_pd: ReportCreateSerializer) -> ReportCreateSerializer:
     q_start_time = f'''
         select time, active from {test_pd.lg_type}_{test_pd.project_id}.."users" 
@@ -102,7 +104,7 @@ def get_test_details(test_pd: ReportCreateSerializer) -> ReportCreateSerializer:
     test_pd.fivexx = response_data['5xx']
     return test_pd.validate(test_pd.dict())
 
-
+@dlog
 def get_backend_requests(build_id, test_name, lg_type,
                          start_time: datetime, end_time: datetime,
                          aggregation, sampler,
@@ -157,7 +159,7 @@ def get_backend_requests(build_id, test_name, lg_type,
             results['response'][_['time']] = _['rt']
     return timestamps, results, users
 
-
+@dlog
 def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time: datetime, end_time: datetime, aggregation, sampler,
                          timestamps=None, users=None, scope=None, aggr='pct95', status='all'):
     """
@@ -187,7 +189,7 @@ def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time:
     if not (timestamps and users):
         timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
     query = f"select time, percentile(\"{aggr}\", 95) as rt from {lg_type}_{project_id}..{test_name}_{aggregation} " \
-            f"where time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}' {status_addon} and sampler_type='{sampler}' and " \
+            f"where time>='{start_time.isoformat(sep=' ', timespec='seconds')}' and time<='{end_time.isoformat(sep=' ', timespec='seconds')}' {status_addon} and sampler_type='{sampler}' and " \
             f"build_id='{build_id}' {scope_addon} group by {group_by}time({aggregation})"
     res = influx_tools.get_client(project_id).query(query)
     res = res.items()
@@ -203,7 +205,7 @@ def get_backend_requests_for_analytics(build_id, test_name, lg_type, start_time:
         data.append(results)
     return timestamps, data, users
 
-
+@dlog
 def get_backend_users(build_id: str, lg_type: str, start_time: datetime, end_time: datetime, aggregation: str):
     project_id = get_project_id(build_id)
     query = f"select sum(\"max\") from (select max(\"active\") from {lg_type}_{project_id}..\"users_{aggregation}\" " \
@@ -240,7 +242,7 @@ def get_hits_tps(build_id, test_name, lg_type, start_time, end_time, aggregation
     # results['hits'] = hits['hits']
     return timestamps, results, users
 
-
+@dlog
 def get_hits(build_id, test_name, lg_type, start_time: datetime, end_time: datetime, aggregation, sampler,
              timestamps=None, users=None, scope=None, status='all'):
     project_id = get_project_id(build_id)
@@ -253,7 +255,7 @@ def get_hits(build_id, test_name, lg_type, start_time: datetime, end_time: datet
     if status != 'all':
         status_addon = f" and status='{status.upper()}'"
     hits_query = f"select hit from {lg_type}_{project_id}..{test_name} where " \
-                 f"time>='{start_time.isoformat()}' and time<='{end_time.isoformat()}'{status_addon} and sampler_type='{sampler}' and" \
+                 f"time>='{start_time.isoformat(sep=' ', timespec='seconds')}' and time<='{end_time.isoformat(sep=' ', timespec='seconds')}'{status_addon} and sampler_type='{sampler}' and" \
                  f" build_id='{build_id}' {scope_addon}"
     results = {"hits": {}}
     res = influx_tools.get_client(project_id).query(hits_query)[test_name]
@@ -279,7 +281,7 @@ def get_hits(build_id, test_name, lg_type, start_time: datetime, end_time: datet
             _ts = None
     return timestamps, results, users
 
-
+@dlog
 def get_tps(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
             timestamps=None, users=None, scope=None, status='all'):
     project_id = get_project_id(build_id)
@@ -303,7 +305,7 @@ def get_tps(build_id, test_name, lg_type, start_time, end_time, aggregation, sam
         results['responses'][_['time']] = _['sum']
     return timestamps, results, users
 
-
+@dlog
 def get_tps_for_analytics(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                           timestamps=None, users=None, scope=None, status='all'):
     project_id = get_project_id(build_id)
@@ -336,7 +338,7 @@ def get_tps_for_analytics(build_id, test_name, lg_type, start_time, end_time, ag
         data.append(results)
     return timestamps, data, users
 
-
+@dlog
 def average_responses(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler, status='all'):
     project_id = get_project_id(build_id)
     timestamps, users = get_backend_users(build_id, lg_type, start_time, end_time, aggregation)
@@ -355,7 +357,7 @@ def average_responses(build_id, test_name, lg_type, start_time, end_time, aggreg
         results["responses"][_['time']] = _['percentile']
     return timestamps, results, users
 
-
+@dlog
 def get_build_data(build_id, test_name, lg_type, start_time, end_time, sampler, status='all'):
     status_addon = ""
     project_id = get_project_id(build_id)
@@ -379,7 +381,7 @@ def get_build_data(build_id, test_name, lg_type, start_time, end_time, sampler, 
     query = f"select * from comparison_{project_id}..api_comparison where build_id='{build_id}' and request_name=~/^{requests}/"
     return list(influx_tools.get_client(project_id).query(query)['api_comparison'])
 
-
+@dlog
 def get_errors(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                timestamps=None, users=None, scope=None):
     project_id = get_project_id(build_id)
@@ -405,7 +407,7 @@ def get_errors(build_id, test_name, lg_type, start_time, end_time, aggregation, 
             _tmp = []
     return timestamps, results, users
 
-
+@dlog
 def get_errors_for_analytics(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                              timestamps=None, users=None, scope=None):
     project_id = get_project_id(build_id)
@@ -434,7 +436,7 @@ def get_errors_for_analytics(build_id, test_name, lg_type, start_time, end_time,
         data.append(results)
     return timestamps, data, users
 
-
+@dlog
 def get_response_codes(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                        timestamps=None, users=None, scope=None, aggr="2xx", status='all'):
     project_id = get_project_id(build_id)
@@ -458,7 +460,7 @@ def get_response_codes(build_id, test_name, lg_type, start_time, end_time, aggre
         results['rcodes'][_['time']] = _["sum"]
     return timestamps, results, users
 
-
+@dlog
 def get_response_codes_for_analytics(build_id, test_name, lg_type, start_time, end_time, aggregation, sampler,
                                      timestamps=None, users=None, scope=None, aggr="2xx", status='all'):
     project_id = get_project_id(build_id)
@@ -491,7 +493,7 @@ def get_response_codes_for_analytics(build_id, test_name, lg_type, start_time, e
         data.append(results)
     return timestamps, data, users
 
-
+@dlog
 def get_throughput_per_test(build_id, test_name, lg_type, sampler, scope, aggregator, status='all'):
     scope_addon = ""
     group_by_addon = ""
@@ -513,7 +515,7 @@ def get_throughput_per_test(build_id, test_name, lg_type, sampler, scope, aggreg
             f")"
     return round(list(influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregator}"])[0]["throughput"], 2)
 
-
+@dlog
 def get_response_time_per_test(build_id, test_name, lg_type, sampler, scope, aggr, status='all', aggregator="30s"):
     scope_addon = ""
     group_by = ""
@@ -539,7 +541,7 @@ def get_response_time_per_test(build_id, test_name, lg_type, sampler, scope, agg
             f"build_id='{build_id}'{status_addon} {scope_addon} {group_by}"
     return round(list(influx_tools.get_client(project_id).query(query)[f"{test_name}_{aggregator}"])[0]["rt"], 2)
 
-
+@dlog
 def calculate_auto_aggregation(build_id: str, test_name: str, lg_type: str, start_time: datetime, end_time: datetime):
     project_id = get_project_id(build_id)
     client = influx_tools.get_client(project_id)
@@ -567,13 +569,13 @@ def calculate_auto_aggregation(build_id: str, test_name: str, lg_type: str, star
                 break
     return aggregation
 
-
+@dlog
 def get_sampler_types(project_id, build_id, test_name, lg_type):
     q_samplers = f"show tag values on {lg_type}_{project_id} with key=sampler_type where build_id='{build_id}'"
     client = influx_tools.get_client(project_id)
     return [each["value"] for each in list(client.query(q_samplers)[f"{test_name}_1s"])]
 
-
+@dlog
 def get_engine_health(query: str, influx_client=None, **kwargs):
     if influx_client:
         result = influx_client.query(query)
@@ -588,7 +590,7 @@ def get_engine_health(query: str, influx_client=None, **kwargs):
 
     return data
 
-
+@dlog
 def get_engine_health_cpu(influx_client=None, **kwargs):
     query = '''
         SELECT 
@@ -605,7 +607,7 @@ def get_engine_health_cpu(influx_client=None, **kwargs):
     '''.format(**kwargs)
     return get_engine_health(query, influx_client=influx_client, **kwargs)
 
-
+@dlog
 def get_engine_health_memory(influx_client=None, **kwargs):
     query = '''
         SELECT 
@@ -620,7 +622,7 @@ def get_engine_health_memory(influx_client=None, **kwargs):
 
     return get_engine_health(query, influx_client=influx_client, **kwargs)
 
-
+@dlog
 def get_engine_health_load(influx_client=None, **kwargs):
     query = '''
         SELECT 

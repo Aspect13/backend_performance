@@ -45,6 +45,7 @@ class ReportDefaultSerializer(BaseModel):
     end_time: Optional[datetime]
     duration: float
     requests: List[str] = []
+    engagement: Optional[str]
 
     class Config:
         orm_mode = True

@@ -69,44 +69,8 @@ class API(Resource):
                 return f'Error parsing params from control tower: {e}', 400
 
         report_model = ReportCreateSerializer(**args, project_id=project.id)
-        # report = Report(
-        #     name=args["test_name"],
-        #     project_id=project.id,
-        #     environment=args["environment"],
-        #     type=args["type"],
-        #     end_time="",
-        #     start_time=args["start_time"],
-        #     failures=0,
-        #     total=0,
-        #     thresholds_missed=0,
-        #     throughput=0,
-        #     vusers=args["vusers"],
-        #     pct50=0,
-        #     pct75=0,
-        #     pct90=0,
-        #     pct95=0,
-        #     pct99=0,
-        #     _max=0,
-        #     _min=0,
-        #     mean=0,
-        #     duration=args["duration"],
-        #     build_id=args["build_id"],
-        #     lg_type=args["lg_type"],
-        #     onexx=0,
-        #     twoxx=0,
-        #     threexx=0,
-        #     fourxx=0,
-        #     fivexx=0,
-        #     requests="",
-        #     test_uid=args.get("test_id")
-        # )
-        # if test_config:
-        #     report.test_config = test_config
-        report = Report(**report_model.dict())
+        report = Report(**report_model.dict(by_alias=True))
         report.insert()
-        # statistic = Statistic.query.filter_by(project_id=project_id).first()
-        # setattr(statistic, 'performance_test_runs', Statistic.performance_test_runs + 1)
-        # statistic.commit()
         self.module.context.rpc_manager.call.increment_statistics(project_id, 'performance_test_runs')
         return report.to_json(), 200
 
@@ -120,8 +84,11 @@ class API(Resource):
         ).first()
 
         report_model = get_test_details(ReportCreateSerializer.from_orm(report))
+        log.info('reports put 87 report_model %s', report_model.dict())
 
         updated_model = report_model.copy(update=loads(args["response_times"]))
+        log.info('reports put 90 response_times %s', loads(args["response_times"]))
+        log.info('reports put 91 updated_model %s', updated_model.dict())
         if args.get('missed'):
             updated_model.thresholds_missed = args['missed']
 

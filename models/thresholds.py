@@ -4,7 +4,7 @@ from tools import db_tools, db
 
 
 class Threshold(db_tools.AbstractBaseMixin, db.Base):
-    __tablename__ = "backend_thresholds"
+    __tablename__ = "backend_thresholds_2"
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
     test = Column(String, unique=False, nullable=False)

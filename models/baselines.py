@@ -4,7 +4,7 @@ from tools import db_tools, db
 
 
 class Baseline(db_tools.AbstractBaseMixin, db.Base):
-    __tablename__ = "backend_baselines"
+    __tablename__ = "backend_baselines_2"
     id = Column(Integer, primary_key=True)
     project_id = Column(Integer, unique=False, nullable=False)
     report_id = Column(Integer, unique=False, nullable=False)

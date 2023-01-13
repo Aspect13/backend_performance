@@ -1,4 +1,4 @@
-from flask import request, make_response
+from flask import request
 from flask_restful import Resource
 from ...models.baselines import Baseline
 from ...models.reports import Report
